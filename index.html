@@ -199,7 +199,7 @@
       </div>
       <button class="mini" id="loadChats" style="align-self:flex-end; height:44px">Ambil Chat</button>
     </div>
-    <div class="hint">User harus sudah pernah <b>/start</b> ke bot ini, kalau tidak Telegram menolak (error 403). Tombol <b>Ambil Chat</b> memuat chat terbaru dari getUpdates.</div>
+    <div class="hint">Untuk DM bot↔user, <b>chat id percakapan = user id</b> (angka sama). User harus sudah pernah <b>/start</b> ke bot ini, kalau tidak Telegram menolak (error 403). Tombol <b>Ambil Chat</b> memuat chat terbaru dari getUpdates dan otomatis mengisi chat id-nya.</div>
     <div class="picklist" id="picklist"></div>
 
     <div class="row">
@@ -353,41 +353,79 @@ $('check').addEventListener('click', async () => {
 });
 
 /* ---------- Ambil daftar chat (getUpdates) ---------- */
+// Tombol darurat: hapus webhook lalu ulang Ambil Chat (dibuat dinamis, di bawah kotak status)
+function showWebhookFix(token){
+  let fix = document.getElementById('whFix');
+  if(!fix){
+    fix = document.createElement('button');
+    fix.id='whFix'; fix.className='ghost'; fix.style.marginTop='10px';
+    out.after(fix);
+  }
+  fix.textContent='🧹 Hapus Webhook & Ambil Chat Lagi';
+  fix.classList.remove('hidden');
+  fix.onclick = async () => {
+    if(!confirm('Hapus webhook bot ini?\n\nKalau bot-mu memakai webhook untuk operasi normal (mis. backend produksi), pengiriman ke server itu akan BERHENTI sampai kamu set ulang webhook-nya. Lanjutkan?')) return;
+    fix.disabled=true; const t=fix.textContent; fix.textContent='Menghapus webhook...';
+    try{
+      // drop_pending_updates=false: pertahankan update tertahan supaya bisa dibaca getUpdates
+      const d = await (await fetch(api(token,'deleteWebhook')+'?drop_pending_updates=false')).json();
+      if(d.ok){ fix.classList.add('hidden'); $('loadChats').click(); }
+      else show('err',`❌ Gagal hapus webhook (${d.error_code}): ${d.description}`);
+    }catch(e){ show('err','❌ Error jaringan: '+e.message); }
+    finally{ fix.disabled=false; fix.textContent=t; }
+  };
+}
+
 $('loadChats').addEventListener('click', async () => {
   const token = $('token').value.trim();
   if(!token){ return show('err','Isi bot token dulu.'); }
   const btn=$('loadChats'); btn.disabled=true; btn.textContent='...';
+  const whBtn=document.getElementById('whFix'); if(whBtn) whBtn.classList.add('hidden');
   try{
-    const seen=new Map();
-    let offset=null, total=0;
-    // Paginasi: getUpdates maksimal 100/panggilan, jadi loop pakai offset sampai habis
-    for(let round=0; round<100; round++){
-      const q = `?limit=100&timeout=0${offset!=null?'&offset='+offset:''}`;
-      const data = await (await fetch(api(token,'getUpdates')+q)).json();
-      if(!data.ok){ btn.disabled=false; btn.textContent='Ambil Chat';
-        return show('err',`❌ getUpdates gagal (${data.error_code}): ${data.description}`); }
-      if(data.result.length===0) break;
-      for(const u of data.result){
-        offset = u.update_id + 1;
-        const msg = u.message||u.edited_message||u.channel_post||u.my_chat_member;
-        const c = msg && msg.chat;
-        if(!c) continue;
-        const preview = msg.text || msg.caption ||
-          (msg.photo?'📷 Foto':msg.document?'📄 Dokumen':msg.video?'🎬 Video':
-           msg.voice?'🎤 Pesan suara':msg.sticker?'🎨 Stiker':msg.location?'📍 Lokasi':'pesan');
-        // kumpulkan SEMUA pesan per chat (bukan cuma yang terakhir)
-        let entry = seen.get(c.id);
-        if(!entry){ entry = {chat:c, msgs:[]}; seen.set(c.id, entry); }
-        entry.chat = c; // pakai info chat terbaru
-        entry.msgs.push({text:preview, date:msg.date});
-        total++;
+    // 1) Cek webhook dulu — kalau aktif, getUpdates PASTI tak terbaca (update diarahkan ke webhook).
+    let wh=null;
+    try{ wh = await (await fetch(api(token,'getWebhookInfo'))).json(); }catch(e){}
+    if(wh && wh.ok && wh.result && wh.result.url){
+      const pend = wh.result.pending_update_count ? `Ada ${wh.result.pending_update_count} update tertahan. ` : '';
+      show('err', `⚠️ Webhook aktif → ${wh.result.url}\nSelama webhook aktif, Telegram mengarahkan semua update ke sana, bukan ke getUpdates, jadi daftar chat tak bisa dibaca dari sini. ${pend}Hapus webhook dulu untuk mengambil chat id.`);
+      showWebhookFix(token);
+      return;
+    }
+    // 2) Ambil hingga 100 update TERBARU secara non-destruktif (offset negatif tidak meng-confirm/menghapus),
+    //    jadi tombol ini bisa diklik berkali-kali tanpa mengosongkan antrean update.
+    const seen=new Map(); let total=0;
+    const data = await (await fetch(api(token,'getUpdates')+'?limit=100&timeout=0&offset=-100')).json();
+    if(!data.ok){
+      if(data.error_code===409){ // webhook ternyata masih aktif
+        show('err','⚠️ Webhook masih aktif. Hapus dulu untuk membaca chat.');
+        showWebhookFix(token); return;
       }
-      if(data.result.length<100) break;
+      return show('err',`❌ getUpdates gagal (${data.error_code}): ${data.description}`);
+    }
+    for(const u of data.result){
+      const msg = u.message||u.edited_message||u.channel_post||u.my_chat_member;
+      const c = msg && msg.chat;
+      if(!c) continue;
+      const preview = msg.text || msg.caption ||
+        (msg.photo?'📷 Foto':msg.document?'📄 Dokumen':msg.video?'🎬 Video':
+         msg.voice?'🎤 Pesan suara':msg.sticker?'🎨 Stiker':msg.location?'📍 Lokasi':'pesan');
+      // kumpulkan SEMUA pesan per chat (bukan cuma yang terakhir)
+      let entry = seen.get(c.id);
+      if(!entry){ entry = {chat:c, msgs:[]}; seen.set(c.id, entry); }
+      entry.chat = c; // pakai info chat terbaru
+      entry.msgs.push({text:preview, date:msg.date});
+      total++;
     }
     const list=$('picklist'); list.innerHTML='';
     if(seen.size===0){
-      show('err','Belum ada chat. Minta user kirim /start ke bot lalu coba lagi. (getUpdates kosong jika webhook aktif atau update sudah kedaluwarsa)');
-      list.classList.remove('show'); return;
+      list.classList.remove('show');
+      show('err',
+        'Kotak update masih kosong. Penyebab umum:\n'+
+        '• User belum pernah kirim pesan/ /start ke bot, ATAU\n'+
+        '• Pesannya sudah kedaluwarsa (>24 jam) atau sudah terkonsumsi polling lain.\n'+
+        'Solusi: minta user kirim /start atau pesan apa pun ke bot SEKARANG, lalu klik "Ambil Chat" lagi.\n'+
+        'Alternatif: isi Chat ID manual. Untuk DM bot↔user, chat id = user id (cek via @userinfobot).');
+      return;
     }
     const fmtWhen = d => d ? new Date(d*1000).toLocaleString('id-ID',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) : '';
     for(const e of seen.values()){
