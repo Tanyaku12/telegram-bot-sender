@@ -6,48 +6,67 @@
 <title>Telegram Bot — Kirim Pesan</title>
 <style>
   :root[data-theme="dark"]{
-    --bg1:#0b1220; --bg2:#101a2e; --card:rgba(255,255,255,.06);
-    --stroke:rgba(255,255,255,.12); --tg:#2aabee; --tg2:#229ed9;
-    --text:#e8eef7; --muted:#8ea1bd; --ok:#3ecf8e; --err:#ff6b6b;
-    --field:rgba(0,0,0,.25); --chip:rgba(255,255,255,.07);
+    --bg1:#070d19; --bg2:#0d1730; --bg3:#122043; --card:rgba(255,255,255,.055);
+    --card2:rgba(255,255,255,.02); --stroke:rgba(255,255,255,.1);
+    --stroke2:rgba(255,255,255,.05); --tg:#2aabee; --tg2:#229ed9; --tg3:#4fc3f7;
+    --text:#e8eef7; --muted:#8095b3; --ok:#3ecf8e; --err:#ff6b6b;
+    --field:rgba(0,0,0,.28); --chip:rgba(255,255,255,.06);
+    --shadow:0 24px 70px rgba(0,0,0,.5); --glow:rgba(42,171,238,.45);
+    --accent-soft:rgba(42,171,238,.12);
   }
   :root[data-theme="light"]{
-    --bg1:#eef3fb; --bg2:#e2ecf8; --card:rgba(255,255,255,.85);
-    --stroke:rgba(20,40,70,.14); --tg:#229ed9; --tg2:#1b87ba;
-    --text:#132339; --muted:#5b6c85; --ok:#178a5b; --err:#d43d3d;
-    --field:rgba(255,255,255,.9); --chip:rgba(20,40,70,.05);
+    --bg1:#e8f0fb; --bg2:#dce8f7; --bg3:#eef4fc; --card:rgba(255,255,255,.78);
+    --card2:rgba(255,255,255,.5); --stroke:rgba(20,40,70,.12);
+    --stroke2:rgba(20,40,70,.06); --tg:#1b93cf; --tg2:#1477ab; --tg3:#0e6aa0;
+    --text:#0f2136; --muted:#57687f; --ok:#0f7a4d; --err:#cf3535;
+    --field:rgba(255,255,255,.92); --chip:rgba(20,40,70,.045);
+    --shadow:0 22px 55px rgba(30,60,100,.18); --glow:rgba(27,147,207,.35);
+    --accent-soft:rgba(27,147,207,.1);
   }
+  html{scroll-behavior:smooth}
   *{box-sizing:border-box}
   body{
     margin:0; min-height:100vh; font-family:"Segoe UI",system-ui,-apple-system,sans-serif;
     color:var(--text);
     background:
-      radial-gradient(1200px 600px at 80% -10%, rgba(42,171,238,.18), transparent 60%),
-      radial-gradient(900px 500px at -10% 110%, rgba(34,158,217,.14), transparent 60%),
-      linear-gradient(160deg,var(--bg1),var(--bg2));
+      radial-gradient(1100px 650px at 82% -12%, var(--glow), transparent 58%),
+      radial-gradient(850px 550px at -12% 108%, rgba(79,195,247,.16), transparent 58%),
+      radial-gradient(600px 400px at 50% 50%, rgba(255,255,255,.02), transparent 70%),
+      linear-gradient(155deg,var(--bg1) 0%, var(--bg2) 55%, var(--bg3) 100%);
     background-attachment:fixed;
-    display:flex; align-items:flex-start; justify-content:center; padding:24px;
+    display:flex; align-items:flex-start; justify-content:center; padding:28px 20px;
   }
   .card{
-    width:100%; max-width:470px; background:var(--card);
-    border:1px solid var(--stroke); border-radius:20px; padding:28px;
-    backdrop-filter:blur(14px); box-shadow:0 20px 60px rgba(0,0,0,.35);
+    position:relative; width:100%; max-width:472px; border-radius:24px; padding:30px;
+    background:linear-gradient(180deg,var(--card),var(--card2));
+    border:1px solid var(--stroke);
+    backdrop-filter:blur(18px) saturate(1.2); -webkit-backdrop-filter:blur(18px) saturate(1.2);
+    box-shadow:var(--shadow), inset 0 1px 0 rgba(255,255,255,.08);
   }
-  .brand{display:flex; align-items:center; gap:12px; margin-bottom:6px}
+  /* Garis aksen gradien tipis di tepi atas kartu */
+  .card::before{
+    content:""; position:absolute; inset:0; border-radius:inherit; padding:1px; pointer-events:none;
+    background:linear-gradient(140deg, var(--tg3), transparent 35%, transparent 65%, rgba(255,255,255,.14));
+    -webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite:xor; mask-composite:exclude; opacity:.5;
+  }
+  .card>*{position:relative}
+  .brand{display:flex; align-items:center; gap:13px; margin-bottom:6px}
   .logo{
-    width:42px; height:42px; border-radius:12px; display:grid; place-items:center;
-    background:linear-gradient(135deg,var(--tg),var(--tg2)); flex:0 0 auto;
-    box-shadow:0 6px 18px rgba(42,171,238,.4);
+    position:relative; width:46px; height:46px; border-radius:14px; display:grid; place-items:center;
+    background:linear-gradient(135deg,var(--tg3),var(--tg2)); flex:0 0 auto;
+    box-shadow:0 8px 22px var(--glow), inset 0 1px 0 rgba(255,255,255,.35);
   }
-  .logo svg{width:24px;height:24px;fill:#fff}
-  h1{font-size:19px; margin:0}
+  .logo svg{width:25px;height:25px;fill:#fff; filter:drop-shadow(0 1px 2px rgba(0,0,0,.25))}
+  h1{font-size:20px; margin:0; letter-spacing:-.2px; font-weight:650}
   .sub{color:var(--muted); font-size:13px; margin:2px 0 20px}
   .themebtn{
-    margin-left:auto; flex:0 0 auto; width:38px; height:38px; border-radius:11px;
+    margin-left:auto; flex:0 0 auto; width:40px; height:40px; border-radius:13px;
     border:1px solid var(--stroke); background:var(--chip); color:var(--text);
-    cursor:pointer; font-size:17px; display:grid; place-items:center;
+    cursor:pointer; font-size:18px; display:grid; place-items:center;
+    transition:transform .18s, filter .18s, background .18s;
   }
-  .themebtn:hover{filter:brightness(1.1)}
+  .themebtn:hover{filter:brightness(1.15); transform:rotate(-12deg) scale(1.05); background:var(--accent-soft)}
   label{display:block; font-size:13px; color:var(--muted); margin:14px 0 6px}
   .labelrow{display:flex; align-items:baseline; justify-content:space-between; margin:14px 0 6px}
   .labelrow label{margin:0}
@@ -55,11 +74,24 @@
   .counter.over{color:var(--err)}
   input,textarea,select{
     width:100%; background:var(--field); border:1px solid var(--stroke);
-    color:var(--text); border-radius:12px; padding:12px 14px; font-size:14px;
-    font-family:inherit; outline:none; transition:border .15s, box-shadow .15s;
+    color:var(--text); border-radius:13px; padding:12px 14px; font-size:14px;
+    font-family:inherit; outline:none; transition:border .18s, box-shadow .18s, background .18s;
+    box-shadow:inset 0 1px 2px rgba(0,0,0,.12);
   }
-  input:focus,textarea:focus,select:focus{border-color:var(--tg); box-shadow:0 0 0 3px rgba(42,171,238,.18)}
+  input::placeholder,textarea::placeholder{color:var(--muted); opacity:.7}
+  input:hover,textarea:hover,select:hover{border-color:var(--stroke)}
+  input:focus,textarea:focus,select:focus{
+    border-color:var(--tg); box-shadow:0 0 0 3px var(--accent-soft), inset 0 1px 2px rgba(0,0,0,.12);
+    background:var(--field);
+  }
+  select{appearance:none; -webkit-appearance:none; cursor:pointer;
+    background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);
+    background-position:calc(100% - 18px) 52%, calc(100% - 13px) 52%; background-size:5px 5px,5px 5px; background-repeat:no-repeat;
+    padding-right:34px;
+  }
   textarea{resize:vertical; min-height:92px}
+  code{font-family:ui-monospace,"SF Mono",Menlo,monospace; font-size:11.5px;
+    background:var(--chip); padding:1px 5px; border-radius:5px; border:1px solid var(--stroke2)}
   .row{display:flex; gap:12px; flex-wrap:wrap}
   .row>div{flex:1; min-width:120px}
   .with-btn{display:flex; gap:8px}
@@ -68,40 +100,56 @@
     flex:0 0 auto; width:auto; margin:0; padding:0 16px; font-size:13px; font-weight:600;
     border-radius:12px; border:1px solid var(--stroke); background:var(--chip);
     color:var(--text); cursor:pointer; box-shadow:none; white-space:nowrap;
+    transition:filter .15s, border-color .15s, background .15s;
   }
-  .mini:hover{filter:brightness(1.1)}
+  .mini:hover{filter:brightness(1.08); border-color:var(--tg); background:var(--accent-soft)}
   .mini:disabled{opacity:.6; cursor:not-allowed}
   .hint{font-size:11.5px; color:var(--muted); margin-top:5px; line-height:1.45}
   .check{display:flex; align-items:center; gap:8px; margin-top:10px; font-size:12.5px; color:var(--muted); cursor:pointer}
   .check input{width:auto; margin:0; accent-color:var(--tg)}
   button.send{
+    position:relative; overflow:hidden;
     width:100%; margin-top:22px; border:0; cursor:pointer; color:#fff;
-    background:linear-gradient(135deg,var(--tg),var(--tg2)); font-size:15px; font-weight:600;
-    padding:13px; border-radius:12px; transition:transform .08s, filter .15s;
-    box-shadow:0 10px 24px rgba(42,171,238,.35);
+    background:linear-gradient(135deg,var(--tg3),var(--tg2)); font-size:15px; font-weight:650; letter-spacing:.2px;
+    padding:14px; border-radius:14px; transition:transform .1s, filter .18s, box-shadow .18s;
+    box-shadow:0 12px 28px var(--glow), inset 0 1px 0 rgba(255,255,255,.28);
   }
-  button.send:hover{filter:brightness(1.06)}
-  button.send:active{transform:translateY(1px)}
-  button:disabled{opacity:.6; cursor:not-allowed; filter:none}
+  /* Kilau lembut yang menyapu tombol saat hover */
+  button.send::after{
+    content:""; position:absolute; top:0; left:-60%; width:45%; height:100%;
+    background:linear-gradient(100deg,transparent,rgba(255,255,255,.35),transparent);
+    transform:skewX(-20deg); transition:left .55s ease;
+  }
+  button.send:hover{filter:brightness(1.07); box-shadow:0 16px 34px var(--glow), inset 0 1px 0 rgba(255,255,255,.28)}
+  button.send:hover::after{left:120%}
+  button.send:active{transform:translateY(1px) scale(.995)}
+  button:disabled{opacity:.55; cursor:not-allowed; filter:none}
+  button:disabled::after{display:none}
   .ghost{
     width:100%; margin-top:10px; border:1px solid var(--stroke); cursor:pointer; color:var(--text);
-    background:var(--chip); font-size:14px; font-weight:600; padding:11px; border-radius:12px;
+    background:var(--chip); font-size:14px; font-weight:600; padding:12px; border-radius:13px;
+    transition:filter .15s, border-color .15s, background .15s;
   }
-  .ghost:hover{filter:brightness(1.1)}
+  .ghost:hover{filter:brightness(1.08); border-color:var(--tg); background:var(--accent-soft)}
   .out{
-    margin-top:16px; font-size:13px; border-radius:12px; padding:12px 14px;
+    margin-top:16px; font-size:13px; border-radius:13px; padding:12px 15px;
     display:none; white-space:pre-wrap; word-break:break-word; line-height:1.5;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.05);
   }
-  .out.show{display:block}
-  .out.ok{background:rgba(62,207,142,.12); border:1px solid rgba(62,207,142,.35); color:var(--ok)}
-  .out.err{background:rgba(255,107,107,.1); border:1px solid rgba(255,107,107,.35); color:var(--err)}
+  .out.show{display:block; animation:pop .28s ease}
+  .out.ok{background:linear-gradient(135deg,rgba(62,207,142,.16),rgba(62,207,142,.06)); border:1px solid rgba(62,207,142,.35); color:var(--ok)}
+  .out.err{background:linear-gradient(135deg,rgba(255,107,107,.14),rgba(255,107,107,.05)); border:1px solid rgba(255,107,107,.35); color:var(--err)}
   .botcard{
-    margin-top:12px; display:none; align-items:center; gap:12px; padding:12px 14px;
-    background:rgba(42,171,238,.1); border:1px solid rgba(42,171,238,.3); border-radius:12px;
+    margin-top:12px; display:none; align-items:center; gap:12px; padding:13px 15px;
+    background:linear-gradient(135deg,var(--accent-soft),transparent);
+    border:1px solid rgba(42,171,238,.32); border-radius:14px;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.06);
   }
-  .botcard.show{display:flex}
-  .avatar{width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,var(--tg),var(--tg2));
-    display:grid;place-items:center;font-weight:700;color:#fff;flex:0 0 auto}
+  .botcard.show{display:flex; animation:pop .3s ease}
+  @keyframes pop{from{opacity:0; transform:translateY(-4px)} to{opacity:1; transform:none}}
+  .avatar{width:40px;height:40px;border-radius:11px;background:linear-gradient(135deg,var(--tg3),var(--tg2));
+    display:grid;place-items:center;font-weight:700;color:#fff;flex:0 0 auto;
+    box-shadow:0 4px 12px var(--glow), inset 0 1px 0 rgba(255,255,255,.3)}
   .botcard b{font-size:14px} .botcard span{font-size:12px;color:var(--muted)}
   .foot{margin-top:20px; font-size:11px; color:var(--muted); text-align:center; line-height:1.5}
   a{color:var(--tg); text-decoration:none}
@@ -109,21 +157,26 @@
 
   /* Section divider */
   .divider{height:1px; background:var(--stroke); margin:22px 0 4px; border:0}
-  .sechead{display:flex; align-items:center; justify-content:space-between; margin-top:18px}
-  .sechead h2{font-size:14px; margin:0}
-  .sechead .clr{font-size:12px; color:var(--muted); cursor:pointer; background:none; border:0; padding:0}
+  .sechead{display:flex; align-items:center; justify-content:space-between;
+    margin-top:24px; padding-top:18px; border-top:1px solid var(--stroke2)}
+  .sechead h2{font-size:14.5px; margin:0; font-weight:640; letter-spacing:-.1px; display:flex; align-items:center; gap:8px}
+  .sechead h2::before{content:""; width:3px; height:15px; border-radius:3px;
+    background:linear-gradient(var(--tg3),var(--tg2)); box-shadow:0 0 8px var(--glow)}
+  .sechead .clr{font-size:12px; color:var(--muted); cursor:pointer; background:none; border:0; padding:0; transition:color .15s}
   .sechead .clr:hover{color:var(--err)}
 
   /* Chat picker list */
   .picklist{margin-top:10px; display:none; flex-direction:column; gap:6px; max-height:190px; overflow:auto}
   .picklist.show{display:flex}
   .pickitem{
-    display:flex; align-items:center; gap:10px; padding:9px 11px; border-radius:11px;
-    border:1px solid var(--stroke); background:var(--chip); cursor:pointer; text-align:left; color:var(--text);
+    display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:13px;
+    border:1px solid var(--stroke); background:linear-gradient(135deg,var(--chip),transparent);
+    cursor:pointer; text-align:left; color:var(--text); transition:transform .15s, border-color .15s, box-shadow .15s;
   }
-  .pickitem:hover{border-color:var(--tg)}
-  .pickitem .pa{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,var(--tg),var(--tg2));
-    display:grid;place-items:center;color:#fff;font-weight:700;font-size:13px;flex:0 0 auto}
+  .pickitem:hover{border-color:var(--tg); transform:translateY(-1px); box-shadow:0 6px 16px rgba(0,0,0,.18)}
+  .pickitem .pa{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,var(--tg3),var(--tg2));
+    display:grid;place-items:center;color:#fff;font-weight:700;font-size:13px;flex:0 0 auto;
+    box-shadow:0 3px 10px var(--glow)}
   .pickitem b{font-size:13px} .pickitem small{font-size:11px;color:var(--muted)}
   .pickitem .msgcount{font-size:10.5px; font-weight:600; color:var(--tg); background:rgba(42,171,238,.14);
     padding:1px 7px; border-radius:20px; vertical-align:middle}
@@ -152,11 +205,14 @@
   .histlist{margin-top:8px; display:flex; flex-direction:column; gap:7px}
   .histempty{font-size:12.5px; color:var(--muted); margin-top:6px}
   .histitem{
-    display:flex; align-items:center; gap:11px; padding:9px 12px; border-radius:11px;
-    border:1px solid var(--stroke); background:var(--chip);
+    display:flex; align-items:center; gap:11px; padding:10px 13px; border-radius:13px;
+    border:1px solid var(--stroke); background:linear-gradient(135deg,var(--chip),transparent);
+    transition:transform .15s, border-color .15s, box-shadow .15s;
   }
-  .histitem .hi{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;font-size:14px;flex:0 0 auto;
-    background:rgba(42,171,238,.15)}
+  .histitem:hover{transform:translateY(-1px); border-color:var(--tg);
+    box-shadow:0 6px 16px rgba(0,0,0,.18)}
+  .histitem .hi{width:32px;height:32px;border-radius:9px;display:grid;place-items:center;font-size:15px;flex:0 0 auto;
+    background:linear-gradient(135deg,var(--accent-soft),transparent); border:1px solid var(--stroke2)}
   .histitem .ht{flex:1; min-width:0}
   .histitem b{font-size:13px; display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
   .histitem small{font-size:11px; color:var(--muted)}
@@ -164,6 +220,22 @@
   .badge.ok{background:rgba(62,207,142,.15); color:var(--ok)}
   .badge.err{background:rgba(255,107,107,.15); color:var(--err)}
   .badge.mix{background:rgba(255,183,77,.16); color:#ffb74d}
+  .badge.gone{background:rgba(142,161,189,.16); color:var(--muted)}
+  .secnote{font-size:11px; color:var(--muted); margin-top:4px; line-height:1.45}
+  .histitem .pick{flex:0 0 auto; font-size:11px; font-weight:600; padding:4px 11px; border-radius:20px;
+    border:1px solid var(--stroke); background:var(--chip); color:var(--text); cursor:pointer;
+    transition:filter .15s, border-color .15s, background .15s, color .15s}
+  .histitem .pick:hover{border-color:var(--tg); background:var(--accent-soft); color:var(--tg)}
+
+  /* Scrollbar halus */
+  .picklist::-webkit-scrollbar,.pickitem .msgs::-webkit-scrollbar{width:7px}
+  .picklist::-webkit-scrollbar-thumb,.pickitem .msgs::-webkit-scrollbar-thumb{
+    background:var(--stroke); border-radius:20px}
+  .picklist::-webkit-scrollbar-thumb:hover,.pickitem .msgs::-webkit-scrollbar-thumb:hover{background:var(--tg)}
+  .picklist,.pickitem .msgs{scrollbar-width:thin; scrollbar-color:var(--stroke) transparent}
+  .card{animation:cardIn .45s cubic-bezier(.2,.7,.3,1)}
+  @keyframes cardIn{from{opacity:0; transform:translateY(12px) scale(.99)} to{opacity:1; transform:none}}
+  @media (prefers-reduced-motion:reduce){*{animation:none !important; transition:none !important}}
 </style>
 </head>
 <body>
@@ -264,6 +336,20 @@
       <button class="clr" id="clearHist">Hapus semua</button>
     </div>
     <div class="histlist" id="histlist"></div>
+
+    <div class="sechead">
+      <h2>Grup Bot</h2>
+      <button class="clr" id="clearGroups">Hapus semua</button>
+    </div>
+    <div class="secnote">Terkumpul otomatis saat <b>Ambil Chat</b> (event bot ditambah/dikeluarkan &amp; grup yang aktif). Bot API tak bisa menarik daftar grup penuh, jadi ini <b>best-effort</b> &amp; makin lengkap makin sering polling.</div>
+    <div class="histlist" id="grouplist"></div>
+
+    <div class="sechead">
+      <h2>Pengguna Bot</h2>
+      <button class="clr" id="clearContacts">Hapus semua</button>
+    </div>
+    <div class="secnote">User/chat privat yang pernah terlihat berinteraksi dengan bot (dari <b>Ambil Chat</b>). Bersifat kumulatif &amp; best-effort. Klik <b>Pilih</b> untuk jadikan target.</div>
+    <div class="histlist" id="contactlist"></div>
 
     <div class="foot">
       Gunakan hanya untuk bot &amp; penerima yang sah. Mengirim pesan tak diminta melanggar
@@ -406,6 +492,8 @@ $('loadChats').addEventListener('click', async () => {
       const msg = u.message||u.edited_message||u.channel_post||u.my_chat_member;
       const c = msg && msg.chat;
       if(!c) continue;
+      // Rekam ke pelacak kumulatif (grup / pengguna) — best-effort dari update yang terlihat
+      trackChat(c, msg.date, u.my_chat_member);
       const preview = msg.text || msg.caption ||
         (msg.photo?'📷 Foto':msg.document?'📄 Dokumen':msg.video?'🎬 Video':
          msg.voice?'🎤 Pesan suara':msg.sticker?'🎨 Stiker':msg.location?'📍 Lokasi':'pesan');
@@ -416,6 +504,7 @@ $('loadChats').addEventListener('click', async () => {
       entry.msgs.push({text:preview, date:msg.date});
       total++;
     }
+    renderGroups(); renderContacts();
     const list=$('picklist'); list.innerHTML='';
     if(seen.size===0){
       list.classList.remove('show');
@@ -530,6 +619,85 @@ function renderHist(){
 }
 $('clearHist').addEventListener('click', () => { localStorage.removeItem(HIST_KEY); renderHist(); });
 renderHist();
+
+/* ---------- Pelacak grup & pengguna (kumulatif, best-effort) ---------- */
+// Bot API tak menyediakan daftar grup/pengguna penuh. Kita akumulasi sendiri dari
+// setiap chat yang terlihat di getUpdates + event my_chat_member (bot ditambah/dikeluarkan).
+const GROUP_KEY='tgb_groups', CONTACT_KEY='tgb_contacts';
+const GROUP_TYPES=new Set(['group','supergroup','channel']);
+const loadStore = k => { try{ return JSON.parse(localStorage.getItem(k)||'{}'); }catch(e){ return {}; } };
+const saveStore = (k,o) => localStorage.setItem(k, JSON.stringify(o));
+function chatName(c){
+  return c.title || [c.first_name,c.last_name].filter(Boolean).join(' ') || c.username || 'Tanpa nama';
+}
+// Catat satu chat yang terlihat. `mcm` = objek my_chat_member kalau update ini soal status bot.
+function trackChat(c, date, mcm){
+  const when = (date||0)*1000;
+  if(GROUP_TYPES.has(c.type)){
+    const g=loadStore(GROUP_KEY);
+    const prev=g[c.id]||{firstSeen:when||undefined};
+    // Status keanggotaan bot dari my_chat_member (kalau ada), kalau tidak anggap masih member
+    let member=prev.member!==false;
+    if(mcm && mcm.new_chat_member){
+      const st=mcm.new_chat_member.status;
+      member = !(st==='left' || st==='kicked');
+    }
+    g[c.id]={
+      id:c.id, name:chatName(c), type:c.type,
+      username:c.username||'', member,
+      firstSeen:prev.firstSeen||when||undefined,
+      lastSeen:Math.max(prev.lastSeen||0, when||0)||undefined,
+    };
+    saveStore(GROUP_KEY,g);
+  }else if(c.type==='private'){
+    const u=loadStore(CONTACT_KEY);
+    const prev=u[c.id]||{count:0, firstSeen:when||undefined};
+    u[c.id]={
+      id:c.id, name:chatName(c), username:c.username||'',
+      count:(prev.count||0)+1,
+      firstSeen:prev.firstSeen||when||undefined,
+      lastSeen:Math.max(prev.lastSeen||0, when||0)||undefined,
+    };
+    saveStore(CONTACT_KEY,u);
+  }
+}
+const fmtDate = ms => ms ? new Date(ms).toLocaleString('id-ID',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) : '—';
+const byLastSeen = (a,b) => (b.lastSeen||0)-(a.lastSeen||0);
+const GTYPE_ICON={group:'👥', supergroup:'👥', channel:'📢'};
+
+function renderGroups(){
+  const g=Object.values(loadStore(GROUP_KEY)).sort(byLastSeen), el=$('grouplist');
+  if(g.length===0){ el.innerHTML='<div class="histempty">Belum ada grup terekam.</div>'; return; }
+  el.innerHTML='';
+  for(const e of g){
+    const badgeCls=e.member?'ok':'gone', badge=e.member?'anggota':'keluar';
+    const div=document.createElement('div'); div.className='histitem';
+    div.innerHTML=`<div class="hi">${GTYPE_ICON[e.type]||'👥'}</div>
+      <div class="ht"><b>${esc(e.name)}</b><small>id ${e.id}${e.username?' · @'+esc(e.username):''} · ${e.type} · terlihat ${fmtDate(e.lastSeen)}</small></div>
+      <span class="badge ${badgeCls}">${badge}</span>`;
+    const pick=document.createElement('button'); pick.className='pick'; pick.textContent='Pilih';
+    pick.addEventListener('click', () => { $('chat').value=e.id; persistCreds(); show('ok',`Target di-set ke grup: ${e.name} (${e.id})`); });
+    div.appendChild(pick);
+    el.appendChild(div);
+  }
+}
+function renderContacts(){
+  const u=Object.values(loadStore(CONTACT_KEY)).sort(byLastSeen), el=$('contactlist');
+  if(u.length===0){ el.innerHTML='<div class="histempty">Belum ada pengguna terekam.</div>'; return; }
+  el.innerHTML='';
+  for(const e of u){
+    const div=document.createElement('div'); div.className='histitem';
+    div.innerHTML=`<div class="hi">👤</div>
+      <div class="ht"><b>${esc(e.name)}</b><small>id ${e.id}${e.username?' · @'+esc(e.username):''} · ${e.count}× · terakhir ${fmtDate(e.lastSeen)}</small></div>`;
+    const pick=document.createElement('button'); pick.className='pick'; pick.textContent='Pilih';
+    pick.addEventListener('click', () => { $('chat').value=e.id; persistCreds(); show('ok',`Target di-set ke: ${e.name} (${e.id})`); });
+    div.appendChild(pick);
+    el.appendChild(div);
+  }
+}
+$('clearGroups').addEventListener('click', () => { if(confirm('Hapus semua rekaman grup?')){ localStorage.removeItem(GROUP_KEY); renderGroups(); } });
+$('clearContacts').addEventListener('click', () => { if(confirm('Hapus semua rekaman pengguna?')){ localStorage.removeItem(CONTACT_KEY); renderContacts(); } });
+renderGroups(); renderContacts();
 
 /* ---------- Kirim ---------- */
 $('send').addEventListener('click', async () => {
