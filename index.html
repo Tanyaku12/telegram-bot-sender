@@ -429,7 +429,9 @@ $('check').addEventListener('click', async () => {
       $('botName').textContent = b.first_name || 'Bot';
       $('botUser').textContent = '@'+b.username+' · id '+b.id;
       $('botcard').classList.add('show');
-      show('ok','✅ Token valid.');
+      show('ok','✅ Token valid. Mengambil grup & pengguna...');
+      // Setelah token valid, langsung tarik daftar chat → grup & pengguna otomatis tampil (mode silent)
+      fetchChats({silent:true});
     }else{
       $('botcard').classList.remove('show');
       show('err',`❌ Token tidak valid (${data.error_code}): ${data.description}`);
@@ -462,9 +464,11 @@ function showWebhookFix(token){
   };
 }
 
-$('loadChats').addEventListener('click', async () => {
+// silent=true → dipanggil otomatis (mis. dari Cek Bot): tetap rekam & render grup/user,
+// tapi jangan munculkan error berisik "update kosong" dan jangan timpa pesan sukses token.
+async function fetchChats({silent=false}={}){
   const token = $('token').value.trim();
-  if(!token){ return show('err','Isi bot token dulu.'); }
+  if(!token){ if(!silent) show('err','Isi bot token dulu.'); return; }
   const btn=$('loadChats'); btn.disabled=true; btn.textContent='...';
   const whBtn=document.getElementById('whFix'); if(whBtn) whBtn.classList.add('hidden');
   try{
@@ -508,12 +512,18 @@ $('loadChats').addEventListener('click', async () => {
     const list=$('picklist'); list.innerHTML='';
     if(seen.size===0){
       list.classList.remove('show');
-      show('err',
-        'Kotak update masih kosong. Penyebab umum:\n'+
-        '• User belum pernah kirim pesan/ /start ke bot, ATAU\n'+
-        '• Pesannya sudah kedaluwarsa (>24 jam) atau sudah terkonsumsi polling lain.\n'+
-        'Solusi: minta user kirim /start atau pesan apa pun ke bot SEKARANG, lalu klik "Ambil Chat" lagi.\n'+
-        'Alternatif: isi Chat ID manual. Untuk DM bot↔user, chat id = user id (cek via @userinfobot).');
+      if(silent){
+        // Dipanggil dari Cek Bot: jangan berisik. Tampilkan info ringkas + arahkan ke data tersimpan.
+        const nG=Object.keys(loadStore(GROUP_KEY)).length, nU=Object.keys(loadStore(CONTACT_KEY)).length;
+        show('ok', `✅ Token valid.\nBelum ada update baru. Menampilkan data tersimpan: ${nG} grup · ${nU} pengguna.\n(Grup/user baru muncul setelah ada pesan masuk — minta user kirim /start lalu klik "Ambil Chat".)`);
+      }else{
+        show('err',
+          'Kotak update masih kosong. Penyebab umum:\n'+
+          '• User belum pernah kirim pesan/ /start ke bot, ATAU\n'+
+          '• Pesannya sudah kedaluwarsa (>24 jam) atau sudah terkonsumsi polling lain.\n'+
+          'Solusi: minta user kirim /start atau pesan apa pun ke bot SEKARANG, lalu klik "Ambil Chat" lagi.\n'+
+          'Alternatif: isi Chat ID manual. Untuk DM bot↔user, chat id = user id (cek via @userinfobot).');
+      }
       return;
     }
     const fmtWhen = d => d ? new Date(d*1000).toLocaleString('id-ID',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) : '';
@@ -540,10 +550,12 @@ $('loadChats').addEventListener('click', async () => {
       list.appendChild(item);
     }
     list.classList.add('show');
-    show('ok', `Ditemukan ${seen.size} chat dari ${total} update. Klik salah satu untuk memilih.`);
-  }catch(e){ show('err','❌ Error jaringan: '+e.message); }
+    const nG=Object.keys(loadStore(GROUP_KEY)).length, nU=Object.keys(loadStore(CONTACT_KEY)).length;
+    show('ok', `${silent?'✅ Token valid. ':''}Ditemukan ${seen.size} chat dari ${total} update — ${nG} grup · ${nU} pengguna terekam. Klik salah satu untuk memilih.`);
+  }catch(e){ if(!silent) show('err','❌ Error jaringan: '+e.message); }
   finally{ btn.disabled=false; btn.textContent='Ambil Chat'; }
-});
+}
+$('loadChats').addEventListener('click', () => fetchChats({silent:false}));
 
 function esc(s){ return String(s).replace(/[&<>"]/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m])); }
 
