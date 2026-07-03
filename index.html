@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Telegram Bot — Kirim Pesan</title>
+<style>
+  :root[data-theme="dark"]{
+    --bg1:#0b1220; --bg2:#101a2e; --card:rgba(255,255,255,.06);
+    --stroke:rgba(255,255,255,.12); --tg:#2aabee; --tg2:#229ed9;
+    --text:#e8eef7; --muted:#8ea1bd; --ok:#3ecf8e; --err:#ff6b6b;
+    --field:rgba(0,0,0,.25); --chip:rgba(255,255,255,.07);
+  }
+  :root[data-theme="light"]{
+    --bg1:#eef3fb; --bg2:#e2ecf8; --card:rgba(255,255,255,.85);
+    --stroke:rgba(20,40,70,.14); --tg:#229ed9; --tg2:#1b87ba;
+    --text:#132339; --muted:#5b6c85; --ok:#178a5b; --err:#d43d3d;
+    --field:rgba(255,255,255,.9); --chip:rgba(20,40,70,.05);
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; min-height:100vh; font-family:"Segoe UI",system-ui,-apple-system,sans-serif;
+    color:var(--text);
+    background:
+      radial-gradient(1200px 600px at 80% -10%, rgba(42,171,238,.18), transparent 60%),
+      radial-gradient(900px 500px at -10% 110%, rgba(34,158,217,.14), transparent 60%),
+      linear-gradient(160deg,var(--bg1),var(--bg2));
+    background-attachment:fixed;
+    display:flex; align-items:flex-start; justify-content:center; padding:24px;
+  }
+  .card{
+    width:100%; max-width:470px; background:var(--card);
+    border:1px solid var(--stroke); border-radius:20px; padding:28px;
+    backdrop-filter:blur(14px); box-shadow:0 20px 60px rgba(0,0,0,.35);
+  }
+  .brand{display:flex; align-items:center; gap:12px; margin-bottom:6px}
+  .logo{
+    width:42px; height:42px; border-radius:12px; display:grid; place-items:center;
+    background:linear-gradient(135deg,var(--tg),var(--tg2)); flex:0 0 auto;
+    box-shadow:0 6px 18px rgba(42,171,238,.4);
+  }
+  .logo svg{width:24px;height:24px;fill:#fff}
+  h1{font-size:19px; margin:0}
+  .sub{color:var(--muted); font-size:13px; margin:2px 0 20px}
+  .themebtn{
+    margin-left:auto; flex:0 0 auto; width:38px; height:38px; border-radius:11px;
+    border:1px solid var(--stroke); background:var(--chip); color:var(--text);
+    cursor:pointer; font-size:17px; display:grid; place-items:center;
+  }
+  .themebtn:hover{filter:brightness(1.1)}
+  label{display:block; font-size:13px; color:var(--muted); margin:14px 0 6px}
+  .labelrow{display:flex; align-items:baseline; justify-content:space-between; margin:14px 0 6px}
+  .labelrow label{margin:0}
+  .counter{font-size:11.5px; color:var(--muted)}
+  .counter.over{color:var(--err)}
+  input,textarea,select{
+    width:100%; background:var(--field); border:1px solid var(--stroke);
+    color:var(--text); border-radius:12px; padding:12px 14px; font-size:14px;
+    font-family:inherit; outline:none; transition:border .15s, box-shadow .15s;
+  }
+  input:focus,textarea:focus,select:focus{border-color:var(--tg); box-shadow:0 0 0 3px rgba(42,171,238,.18)}
+  textarea{resize:vertical; min-height:92px}
+  .row{display:flex; gap:12px; flex-wrap:wrap}
+  .row>div{flex:1; min-width:120px}
+  .with-btn{display:flex; gap:8px}
+  .with-btn input{flex:1}
+  .mini{
+    flex:0 0 auto; width:auto; margin:0; padding:0 16px; font-size:13px; font-weight:600;
+    border-radius:12px; border:1px solid var(--stroke); background:var(--chip);
+    color:var(--text); cursor:pointer; box-shadow:none; white-space:nowrap;
+  }
+  .mini:hover{filter:brightness(1.1)}
+  .mini:disabled{opacity:.6; cursor:not-allowed}
+  .hint{font-size:11.5px; color:var(--muted); margin-top:5px; line-height:1.45}
+  .check{display:flex; align-items:center; gap:8px; margin-top:10px; font-size:12.5px; color:var(--muted); cursor:pointer}
+  .check input{width:auto; margin:0; accent-color:var(--tg)}
+  button.send{
+    width:100%; margin-top:22px; border:0; cursor:pointer; color:#fff;
+    background:linear-gradient(135deg,var(--tg),var(--tg2)); font-size:15px; font-weight:600;
+    padding:13px; border-radius:12px; transition:transform .08s, filter .15s;
+    box-shadow:0 10px 24px rgba(42,171,238,.35);
+  }
+  button.send:hover{filter:brightness(1.06)}
+  button.send:active{transform:translateY(1px)}
+  button:disabled{opacity:.6; cursor:not-allowed; filter:none}
+  .ghost{
+    width:100%; margin-top:10px; border:1px solid var(--stroke); cursor:pointer; color:var(--text);
+    background:var(--chip); font-size:14px; font-weight:600; padding:11px; border-radius:12px;
+  }
+  .ghost:hover{filter:brightness(1.1)}
+  .out{
+    margin-top:16px; font-size:13px; border-radius:12px; padding:12px 14px;
+    display:none; white-space:pre-wrap; word-break:break-word; line-height:1.5;
+  }
+  .out.show{display:block}
+  .out.ok{background:rgba(62,207,142,.12); border:1px solid rgba(62,207,142,.35); color:var(--ok)}
+  .out.err{background:rgba(255,107,107,.1); border:1px solid rgba(255,107,107,.35); color:var(--err)}
+  .botcard{
+    margin-top:12px; display:none; align-items:center; gap:12px; padding:12px 14px;
+    background:rgba(42,171,238,.1); border:1px solid rgba(42,171,238,.3); border-radius:12px;
+  }
+  .botcard.show{display:flex}
+  .avatar{width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,var(--tg),var(--tg2));
+    display:grid;place-items:center;font-weight:700;color:#fff;flex:0 0 auto}
+  .botcard b{font-size:14px} .botcard span{font-size:12px;color:var(--muted)}
+  .foot{margin-top:20px; font-size:11px; color:var(--muted); text-align:center; line-height:1.5}
+  a{color:var(--tg); text-decoration:none}
+  .hidden{display:none !important}
+
+  /* Section divider */
+  .divider{height:1px; background:var(--stroke); margin:22px 0 4px; border:0}
+  .sechead{display:flex; align-items:center; justify-content:space-between; margin-top:18px}
+  .sechead h2{font-size:14px; margin:0}
+  .sechead .clr{font-size:12px; color:var(--muted); cursor:pointer; background:none; border:0; padding:0}
+  .sechead .clr:hover{color:var(--err)}
+
+  /* Chat picker list */
+  .picklist{margin-top:10px; display:none; flex-direction:column; gap:6px; max-height:190px; overflow:auto}
+  .picklist.show{display:flex}
+  .pickitem{
+    display:flex; align-items:center; gap:10px; padding:9px 11px; border-radius:11px;
+    border:1px solid var(--stroke); background:var(--chip); cursor:pointer; text-align:left; color:var(--text);
+  }
+  .pickitem:hover{border-color:var(--tg)}
+  .pickitem .pa{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,var(--tg),var(--tg2));
+    display:grid;place-items:center;color:#fff;font-weight:700;font-size:13px;flex:0 0 auto}
+  .pickitem b{font-size:13px} .pickitem small{font-size:11px;color:var(--muted)}
+  .pickitem .msgcount{font-size:10.5px; font-weight:600; color:var(--tg); background:rgba(42,171,238,.14);
+    padding:1px 7px; border-radius:20px; vertical-align:middle}
+  .pickitem .msgs{margin-top:4px; display:flex; flex-direction:column; gap:3px; max-height:150px; overflow:auto}
+  .pickitem .msgline{display:block; color:var(--text); opacity:.9; line-height:1.4;
+    word-break:break-word; white-space:normal}
+  .pickitem .msgtime{color:var(--muted); opacity:.8}
+
+  /* Preview bubble */
+  .preview{margin-top:12px; display:none}
+  .preview.show{display:block}
+  .bubble{
+    background:linear-gradient(135deg,var(--tg),var(--tg2)); color:#fff; padding:10px 13px;
+    border-radius:14px 14px 4px 14px; max-width:85%; margin-left:auto; font-size:13.5px;
+    line-height:1.5; white-space:pre-wrap; word-break:break-word; box-shadow:0 6px 16px rgba(42,171,238,.3);
+  }
+  .bubble img{max-width:100%; border-radius:10px; margin-bottom:8px; display:block}
+  .bubble .file{display:flex;align-items:center;gap:9px;background:rgba(255,255,255,.15);
+    padding:8px 10px;border-radius:10px;margin-bottom:8px}
+  .bubble .file .fi{width:26px;height:26px;border-radius:7px;background:rgba(255,255,255,.25);
+    display:grid;place-items:center;font-size:14px;flex:0 0 auto}
+  .bubble .btns{margin-top:8px;display:flex;flex-direction:column;gap:5px}
+  .bubble .ib{background:rgba(255,255,255,.18);border-radius:9px;padding:7px;text-align:center;font-size:12.5px;font-weight:600}
+
+  /* History */
+  .histlist{margin-top:8px; display:flex; flex-direction:column; gap:7px}
+  .histempty{font-size:12.5px; color:var(--muted); margin-top:6px}
+  .histitem{
+    display:flex; align-items:center; gap:11px; padding:9px 12px; border-radius:11px;
+    border:1px solid var(--stroke); background:var(--chip);
+  }
+  .histitem .hi{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;font-size:14px;flex:0 0 auto;
+    background:rgba(42,171,238,.15)}
+  .histitem .ht{flex:1; min-width:0}
+  .histitem b{font-size:13px; display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .histitem small{font-size:11px; color:var(--muted)}
+  .badge{font-size:11px; font-weight:700; padding:2px 8px; border-radius:20px; flex:0 0 auto}
+  .badge.ok{background:rgba(62,207,142,.15); color:var(--ok)}
+  .badge.err{background:rgba(255,107,107,.15); color:var(--err)}
+  .badge.mix{background:rgba(255,183,77,.16); color:#ffb74d}
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="brand">
+      <div class="logo">
+        <svg viewBox="0 0 24 24"><path d="M9.8 15.6 9.6 19c.4 0 .6-.2.8-.4l1.9-1.8 3.9 2.9c.7.4 1.2.2 1.4-.7l2.6-12c.2-1-.4-1.4-1-1.1L3.3 10.6c-1 .4-1 1-.2 1.2l4.3 1.3 9.9-6.2c.5-.3.9-.1.6.2z"/></svg>
+      </div>
+      <div>
+        <h1>Kirim Pesan Bot</h1>
+        <div class="sub" style="margin:0">via Telegram Bot API</div>
+      </div>
+      <button class="themebtn" id="theme" title="Ganti tema">🌙</button>
+    </div>
+    <div class="sub">Kirim pesan (teks / foto / dokumen / video) dari bot-mu ke sebuah chat/user ID.</div>
+
+    <label>Bot Token</label>
+    <div class="with-btn">
+      <input id="token" type="password" placeholder="123456:ABC-DEF..." autocomplete="off">
+      <button class="mini" id="check">Cek Bot</button>
+    </div>
+    <div class="hint">Dari @BotFather. Token tetap di browser — dikirim langsung ke api.telegram.org.</div>
+    <label class="check"><input type="checkbox" id="remember"> Ingat token &amp; chat ID di browser ini</label>
+    <div class="botcard" id="botcard">
+      <div class="avatar" id="botAv">B</div>
+      <div><b id="botName"></b><br><span id="botUser"></span></div>
+    </div>
+
+    <div class="with-btn" style="margin-top:14px">
+      <div style="flex:1">
+        <label style="margin-top:0">Target Chat ID</label>
+        <input id="chat" type="text" placeholder="mis. 123456789 atau @username" autocomplete="off">
+      </div>
+      <button class="mini" id="loadChats" style="align-self:flex-end; height:44px">Ambil Chat</button>
+    </div>
+    <div class="hint">User harus sudah pernah <b>/start</b> ke bot ini, kalau tidak Telegram menolak (error 403). Tombol <b>Ambil Chat</b> memuat chat terbaru dari getUpdates.</div>
+    <div class="picklist" id="picklist"></div>
+
+    <div class="row">
+      <div>
+        <label>Tipe</label>
+        <select id="type">
+          <option value="text">Teks</option>
+          <option value="photo">Foto (URL)</option>
+          <option value="document">Dokumen (URL)</option>
+          <option value="video">Video (URL)</option>
+        </select>
+      </div>
+      <div>
+        <label>Format</label>
+        <select id="mode">
+          <option value="">Tanpa format</option>
+          <option value="MarkdownV2">Markdown</option>
+          <option value="HTML">HTML</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="urlWrap" class="hidden">
+      <label id="urlLabel">Pilih File</label>
+      <input id="file" type="file">
+      <div class="hint">File diunggah langsung dari perangkatmu ke Telegram (maks 50 MB via Bot API).</div>
+    </div>
+
+    <div class="labelrow">
+      <label id="textLabel" style="margin:0">Pesan</label>
+      <span class="counter" id="counter">0 / 4096</span>
+    </div>
+    <textarea id="text" placeholder="Tulis pesan di sini..."></textarea>
+
+    <label>Tombol Inline (opsional)</label>
+    <div class="row">
+      <div><input id="btnText" type="text" placeholder="Teks tombol, mis. Buka Situs"></div>
+      <div><input id="btnUrl" type="text" placeholder="https://..."></div>
+    </div>
+    <div class="hint">Isi keduanya untuk menambahkan satu tombol tautan di bawah pesan.</div>
+
+    <div class="row">
+      <div>
+        <label>Jumlah</label>
+        <input id="count" type="number" min="1" step="1" value="1">
+      </div>
+      <div>
+        <label>Jeda (ms)</label>
+        <input id="delay" type="number" min="0" max="10000" step="50" value="0">
+      </div>
+    </div>
+    <div class="hint">Jumlah pesan (tanpa batas) dan jeda antar pesan supaya tidak kena rate limit.</div>
+
+    <button class="ghost" id="previewBtn">👁 Pratinjau Pesan</button>
+    <div class="preview" id="preview"><div class="bubble" id="bubble"></div></div>
+
+    <button class="send" id="send">Kirim Pesan</button>
+    <div id="out" class="out"></div>
+
+    <div class="sechead">
+      <h2>Riwayat Pengiriman</h2>
+      <button class="clr" id="clearHist">Hapus semua</button>
+    </div>
+    <div class="histlist" id="histlist"></div>
+
+    <div class="foot">
+      Gunakan hanya untuk bot &amp; penerima yang sah. Mengirim pesan tak diminta melanggar
+      <a href="https://telegram.org/tos" target="_blank" rel="noopener">Telegram ToS</a>.
+    </div>
+  </div>
+
+<script>
+const $ = id => document.getElementById(id);
+const out = $('out');
+const show = (type,msg) => { out.className='out show '+type; out.textContent=msg; };
+const api = (token,method) => `https://api.telegram.org/bot${encodeURIComponent(token)}/${method}`;
+
+/* ---------- Tema terang/gelap ---------- */
+const THEME_KEY='tgb_theme';
+function applyTheme(t){
+  document.documentElement.setAttribute('data-theme', t);
+  $('theme').textContent = t==='dark' ? '🌙' : '☀️';
+}
+applyTheme(localStorage.getItem(THEME_KEY) || 'dark');
+$('theme').addEventListener('click', () => {
+  const next = document.documentElement.getAttribute('data-theme')==='dark' ? 'light' : 'dark';
+  localStorage.setItem(THEME_KEY, next); applyTheme(next);
+});
+
+/* ---------- Simpan token & chat ID ---------- */
+const SAVE_KEY='tgb_creds';
+(function restore(){
+  try{
+    const s = JSON.parse(localStorage.getItem(SAVE_KEY)||'null');
+    if(s){ $('token').value=s.token||''; $('chat').value=s.chat||''; $('remember').checked=true; }
+  }catch(e){}
+})();
+function persistCreds(){
+  if($('remember').checked){
+    localStorage.setItem(SAVE_KEY, JSON.stringify({token:$('token').value.trim(), chat:$('chat').value.trim()}));
+  }else{
+    localStorage.removeItem(SAVE_KEY);
+  }
+}
+$('remember').addEventListener('change', persistCreds);
+$('token').addEventListener('input', persistCreds);
+$('chat').addEventListener('input', persistCreds);
+
+/* ---------- Toggle tipe & label ---------- */
+const FILE_LABELS={photo:'Pilih Foto', document:'Pilih Dokumen', video:'Pilih Video'};
+const FILE_ACCEPT={photo:'image/*', document:'', video:'video/*'};
+function refreshType(){
+  const t=$('type').value, isFile=t!=='text';
+  $('urlWrap').classList.toggle('hidden', !isFile);
+  if(isFile){ $('urlLabel').textContent=FILE_LABELS[t]; $('file').setAttribute('accept', FILE_ACCEPT[t]); }
+  $('textLabel').textContent = isFile ? 'Caption (opsional)' : 'Pesan';
+  $('text').placeholder = isFile ? 'Caption (boleh kosong)...' : 'Tulis pesan di sini...';
+  updateCounter();
+}
+$('type').addEventListener('change', refreshType);
+
+/* ---------- Char counter (limit Telegram) ---------- */
+function updateCounter(){
+  const limit = $('type').value==='text' ? 4096 : 1024;
+  const len = $('text').value.length;
+  const c=$('counter'); c.textContent = `${len} / ${limit}`;
+  c.classList.toggle('over', len>limit);
+}
+$('text').addEventListener('input', updateCounter);
+
+/* ---------- Cek Bot (getMe) ---------- */
+$('check').addEventListener('click', async () => {
+  const token = $('token').value.trim();
+  if(!token){ return show('err','Isi bot token dulu.'); }
+  const btn = $('check'); btn.disabled = true; btn.textContent = '...';
+  try{
+    const data = await (await fetch(api(token,'getMe'))).json();
+    if(data.ok){
+      const b = data.result;
+      $('botAv').textContent = (b.first_name||'B').charAt(0).toUpperCase();
+      $('botName').textContent = b.first_name || 'Bot';
+      $('botUser').textContent = '@'+b.username+' · id '+b.id;
+      $('botcard').classList.add('show');
+      show('ok','✅ Token valid.');
+    }else{
+      $('botcard').classList.remove('show');
+      show('err',`❌ Token tidak valid (${data.error_code}): ${data.description}`);
+    }
+  }catch(e){ show('err','❌ Error jaringan: '+e.message); }
+  finally{ btn.disabled=false; btn.textContent='Cek Bot'; }
+});
+
+/* ---------- Ambil daftar chat (getUpdates) ---------- */
+$('loadChats').addEventListener('click', async () => {
+  const token = $('token').value.trim();
+  if(!token){ return show('err','Isi bot token dulu.'); }
+  const btn=$('loadChats'); btn.disabled=true; btn.textContent='...';
+  try{
+    const seen=new Map();
+    let offset=null, total=0;
+    // Paginasi: getUpdates maksimal 100/panggilan, jadi loop pakai offset sampai habis
+    for(let round=0; round<100; round++){
+      const q = `?limit=100&timeout=0${offset!=null?'&offset='+offset:''}`;
+      const data = await (await fetch(api(token,'getUpdates')+q)).json();
+      if(!data.ok){ btn.disabled=false; btn.textContent='Ambil Chat';
+        return show('err',`❌ getUpdates gagal (${data.error_code}): ${data.description}`); }
+      if(data.result.length===0) break;
+      for(const u of data.result){
+        offset = u.update_id + 1;
+        const msg = u.message||u.edited_message||u.channel_post||u.my_chat_member;
+        const c = msg && msg.chat;
+        if(!c) continue;
+        const preview = msg.text || msg.caption ||
+          (msg.photo?'📷 Foto':msg.document?'📄 Dokumen':msg.video?'🎬 Video':
+           msg.voice?'🎤 Pesan suara':msg.sticker?'🎨 Stiker':msg.location?'📍 Lokasi':'pesan');
+        // kumpulkan SEMUA pesan per chat (bukan cuma yang terakhir)
+        let entry = seen.get(c.id);
+        if(!entry){ entry = {chat:c, msgs:[]}; seen.set(c.id, entry); }
+        entry.chat = c; // pakai info chat terbaru
+        entry.msgs.push({text:preview, date:msg.date});
+        total++;
+      }
+      if(data.result.length<100) break;
+    }
+    const list=$('picklist'); list.innerHTML='';
+    if(seen.size===0){
+      show('err','Belum ada chat. Minta user kirim /start ke bot lalu coba lagi. (getUpdates kosong jika webhook aktif atau update sudah kedaluwarsa)');
+      list.classList.remove('show'); return;
+    }
+    const fmtWhen = d => d ? new Date(d*1000).toLocaleString('id-ID',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) : '';
+    for(const e of seen.values()){
+      const c=e.chat;
+      const name = c.title || [c.first_name,c.last_name].filter(Boolean).join(' ') || c.username || 'Chat';
+      const msgsHtml = e.msgs.map(m => {
+        const when = fmtWhen(m.date);
+        return `<small class="msgline">🗨️ ${esc(m.text)}${when?' <span class="msgtime">'+when+'</span>':''}</small>`;
+      }).join('');
+      const item=document.createElement('button');
+      item.className='pickitem';
+      item.innerHTML=`<div class="pa">${(name[0]||'?').toUpperCase()}</div>
+        <div style="min-width:0">
+          <b>${esc(name)} <span class="msgcount">${e.msgs.length} pesan</span></b>
+          <small style="display:block">id ${c.id}${c.username?' · @'+esc(c.username):''} · ${c.type}</small>
+          <div class="msgs">${msgsHtml}</div>
+        </div>`;
+      item.addEventListener('click', () => {
+        $('chat').value = c.id; persistCreds();
+        list.classList.remove('show');
+        show('ok', `Chat dipilih: ${name} (${c.id})`);
+      });
+      list.appendChild(item);
+    }
+    list.classList.add('show');
+    show('ok', `Ditemukan ${seen.size} chat dari ${total} update. Klik salah satu untuk memilih.`);
+  }catch(e){ show('err','❌ Error jaringan: '+e.message); }
+  finally{ btn.disabled=false; btn.textContent='Ambil Chat'; }
+});
+
+function esc(s){ return String(s).replace(/[&<>"]/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m])); }
+
+/* ---------- Bangun payload ---------- */
+function buildRequest(){
+  const type=$('type').value, mode=$('mode').value, chat=$('chat').value.trim();
+  const text=$('text').value;
+  const btnText=$('btnText').value.trim(), btnUrl=$('btnUrl').value.trim();
+  const methods={text:'sendMessage', photo:'sendPhoto', document:'sendDocument', video:'sendVideo'};
+  const fileKey={photo:'photo', document:'document', video:'video'};
+  const method=methods[type];
+  const markup = (btnText && btnUrl) ? {inline_keyboard:[[{text:btnText, url:btnUrl}]]} : null;
+  if(type==='text'){
+    const payload={chat_id:chat, text};
+    if(mode) payload.parse_mode=mode;
+    if(markup) payload.reply_markup=markup;
+    return {method, json:payload};
+  }
+  return {method, chat, mode, text, markup, file:$('file').files[0], fileKey:fileKey[type]};
+}
+// Bangun opsi fetch baru tiap kirim (body FormData tidak bisa dipakai ulang)
+function fetchOptions(req){
+  if(req.json){
+    return {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(req.json)};
+  }
+  const fd=new FormData();
+  fd.append('chat_id', req.chat);
+  fd.append(req.fileKey, req.file, req.file.name);
+  if(req.text.trim()) fd.append('caption', req.text);
+  if(req.mode) fd.append('parse_mode', req.mode);
+  if(req.markup) fd.append('reply_markup', JSON.stringify(req.markup));
+  return {method:'POST', body:fd};
+}
+
+/* ---------- Pratinjau ---------- */
+$('previewBtn').addEventListener('click', () => {
+  const p=$('preview'), b=$('bubble');
+  if(p.classList.contains('show')){ p.classList.remove('show'); return; }
+  const type=$('type').value, text=$('text').value, file=$('file').files[0];
+  const btnText=$('btnText').value.trim(), btnUrl=$('btnUrl').value.trim();
+  let html='';
+  if(type==='photo' && file) html+=`<img src="${URL.createObjectURL(file)}" alt="foto" onerror="this.style.display='none'">`;
+  if(type==='video' && file) html+=`<div class="file"><div class="fi">🎬</div><small>${esc(file.name)}</small></div>`;
+  if(type==='document' && file) html+=`<div class="file"><div class="fi">📄</div><small>${esc(file.name)}</small></div>`;
+  const body = text.trim() ? esc(text) : (type==='text' ? '<i style="opacity:.7">(pesan kosong)</i>' : '');
+  html+=body;
+  if(btnText && btnUrl) html+=`<div class="btns"><div class="ib">${esc(btnText)} ↗</div></div>`;
+  b.innerHTML=html || '<i style="opacity:.7">(kosong)</i>';
+  p.classList.add('show');
+});
+
+/* ---------- Riwayat ---------- */
+const HIST_KEY='tgb_history';
+const TYPE_ICON={text:'💬', photo:'🖼️', document:'📄', video:'🎬'};
+function loadHist(){ try{ return JSON.parse(localStorage.getItem(HIST_KEY)||'[]'); }catch(e){ return []; } }
+function saveHist(h){ localStorage.setItem(HIST_KEY, JSON.stringify(h.slice(0,20))); }
+function addHist(entry){ const h=loadHist(); h.unshift(entry); saveHist(h); renderHist(); }
+function renderHist(){
+  const h=loadHist(), el=$('histlist');
+  if(h.length===0){ el.innerHTML='<div class="histempty">Belum ada pengiriman.</div>'; return; }
+  el.innerHTML='';
+  for(const e of h){
+    const badgeCls = e.fail===0 ? 'ok' : (e.ok===0 ? 'err' : 'mix');
+    const badge = e.fail===0 ? `${e.ok} ✓` : `${e.ok}✓ ${e.fail}✕`;
+    const d=new Date(e.time);
+    const when = d.toLocaleString('id-ID',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
+    const div=document.createElement('div'); div.className='histitem';
+    div.innerHTML=`<div class="hi">${TYPE_ICON[e.type]||'💬'}</div>
+      <div class="ht"><b>${esc(e.chat)}</b><small>${e.count} pesan · ${when}</small></div>
+      <span class="badge ${badgeCls}">${badge}</span>`;
+    el.appendChild(div);
+  }
+}
+$('clearHist').addEventListener('click', () => { localStorage.removeItem(HIST_KEY); renderHist(); });
+renderHist();
+
+/* ---------- Kirim ---------- */
+$('send').addEventListener('click', async () => {
+  const token=$('token').value.trim(), chat=$('chat').value.trim();
+  const type=$('type').value, file=$('file').files[0], text=$('text').value;
+
+  let count = parseInt($('count').value,10);
+  if(!Number.isFinite(count) || count<1) count=1;
+  let delay = parseInt($('delay').value,10);
+  if(!Number.isFinite(delay) || delay<0) delay=0;
+
+  if(!token){ return show('err','Bot token belum diisi.'); }
+  if(!chat){  return show('err','Chat ID belum diisi.'); }
+  if(type!=='text' && !file){ return show('err','File belum dipilih.'); }
+  if(type==='text' && !text.trim()){ return show('err','Pesan masih kosong.'); }
+
+  const req = buildRequest();
+  const btn=$('send'); btn.disabled=true;
+  const sleep = ms => new Promise(r=>setTimeout(r,ms));
+  let ok=0, fail=0, lastErr='';
+
+  for(let i=1;i<=count;i++){
+    btn.textContent=`Mengirim ${i}/${count}...`;
+    show('ok', `Mengirim pesan ${i} dari ${count}...\n✅ Sukses: ${ok}   ❌ Gagal: ${fail}`);
+    try{
+      const data = await (await fetch(api(token,req.method), fetchOptions(req))).json();
+      if(data.ok){ ok++; } else { fail++; lastErr=`(${data.error_code}) ${data.description}`; }
+    }catch(e){ fail++; lastErr='jaringan: '+e.message; }
+    if(i<count) await sleep(delay);
+  }
+
+  const resType = fail===0 ? 'ok' : (ok===0 ? 'err' : 'ok');
+  let msg=`Selesai — total ${count} pesan.\n✅ Terkirim: ${ok}   ❌ Gagal: ${fail}`;
+  if(fail>0) msg+=`\nError terakhir: ${lastErr}`;
+  show(resType, (fail===0?'✅ ':'⚠️ ')+msg);
+  btn.disabled=false; btn.textContent='Kirim Pesan';
+
+  addHist({time:Date.now(), type, chat, count, ok, fail});
+});
+
+/* init */
+refreshType();
+</script>
+</body>
+</html>
