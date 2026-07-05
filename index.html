@@ -6,42 +6,47 @@
 <title>Telegram Bot — Kirim Pesan</title>
 <style>
   :root[data-theme="dark"]{
-    --bg1:#070d19; --bg2:#0d1730; --bg3:#122043; --card:rgba(255,255,255,.055);
-    --card2:rgba(255,255,255,.02); --stroke:rgba(255,255,255,.1);
-    --stroke2:rgba(255,255,255,.05); --tg:#2aabee; --tg2:#229ed9; --tg3:#4fc3f7;
-    --text:#e8eef7; --muted:#8095b3; --ok:#3ecf8e; --err:#ff6b6b;
-    --field:rgba(0,0,0,.28); --chip:rgba(255,255,255,.06);
-    --shadow:0 24px 70px rgba(0,0,0,.5); --glow:rgba(42,171,238,.45);
-    --accent-soft:rgba(42,171,238,.12);
+    --bg1:#05080f; --bg2:#0a1120; --bg3:#0f1a36; --card:rgba(255,255,255,.05);
+    --card2:rgba(255,255,255,.015); --stroke:rgba(255,255,255,.09);
+    --stroke2:rgba(255,255,255,.045); --tg:#3aa8e8; --tg2:#2b93d6; --tg3:#6fd0f9;
+    --text:#eef3fb; --muted:#8496b4; --ok:#43d69a; --err:#ff7a7a;
+    --field:rgba(0,0,0,.22); --chip:rgba(255,255,255,.055);
+    --shadow:0 1px 1px rgba(0,0,0,.4), 0 12px 28px rgba(0,0,0,.32), 0 40px 80px rgba(0,0,0,.45);
+    --glow:rgba(58,168,232,.42); --accent-soft:rgba(58,168,232,.13);
+    --sheen:rgba(255,255,255,.08); --tint:rgba(120,180,255,.04);
   }
   :root[data-theme="light"]{
-    --bg1:#e8f0fb; --bg2:#dce8f7; --bg3:#eef4fc; --card:rgba(255,255,255,.78);
-    --card2:rgba(255,255,255,.5); --stroke:rgba(20,40,70,.12);
-    --stroke2:rgba(20,40,70,.06); --tg:#1b93cf; --tg2:#1477ab; --tg3:#0e6aa0;
-    --text:#0f2136; --muted:#57687f; --ok:#0f7a4d; --err:#cf3535;
-    --field:rgba(255,255,255,.92); --chip:rgba(20,40,70,.045);
-    --shadow:0 22px 55px rgba(30,60,100,.18); --glow:rgba(27,147,207,.35);
-    --accent-soft:rgba(27,147,207,.1);
+    --bg1:#eaf1fb; --bg2:#dfeaf8; --bg3:#f5f9fe; --card:rgba(255,255,255,.72);
+    --card2:rgba(255,255,255,.42); --stroke:rgba(28,52,88,.1);
+    --stroke2:rgba(28,52,88,.05); --tg:#1c8fd0; --tg2:#1275ab; --tg3:#37a7e0;
+    --text:#132539; --muted:#5b6d86; --ok:#0e8f5a; --err:#d8453f;
+    --field:rgba(255,255,255,.85); --chip:rgba(28,52,88,.04);
+    --shadow:0 1px 1px rgba(40,70,120,.06), 0 10px 24px rgba(40,70,120,.1), 0 30px 60px rgba(40,70,120,.14);
+    --glow:rgba(28,143,208,.3); --accent-soft:rgba(28,143,208,.09);
+    --sheen:rgba(255,255,255,.75); --tint:rgba(255,255,255,.5);
   }
   html{scroll-behavior:smooth}
   *{box-sizing:border-box}
   body{
-    margin:0; min-height:100vh; font-family:"Segoe UI",system-ui,-apple-system,sans-serif;
+    margin:0; min-height:100vh;
+    font-family:"Inter","SF Pro Display",-apple-system,"Segoe UI",system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+    font-feature-settings:"cv02","cv03","cv04","ss01"; letter-spacing:.1px;
     color:var(--text);
     background:
-      radial-gradient(1100px 650px at 82% -12%, var(--glow), transparent 58%),
-      radial-gradient(850px 550px at -12% 108%, rgba(79,195,247,.16), transparent 58%),
-      radial-gradient(600px 400px at 50% 50%, rgba(255,255,255,.02), transparent 70%),
-      linear-gradient(155deg,var(--bg1) 0%, var(--bg2) 55%, var(--bg3) 100%);
+      radial-gradient(1100px 680px at 84% -14%, var(--glow), transparent 60%),
+      radial-gradient(820px 560px at -14% 112%, rgba(111,208,249,.14), transparent 60%),
+      radial-gradient(700px 460px at 50% 44%, var(--tint), transparent 72%),
+      linear-gradient(160deg,var(--bg1) 0%, var(--bg2) 52%, var(--bg3) 100%);
     background-attachment:fixed;
-    display:flex; align-items:flex-start; justify-content:center; padding:28px 20px;
+    display:flex; align-items:flex-start; justify-content:center; padding:32px 20px;
   }
   .card{
-    position:relative; width:100%; max-width:472px; border-radius:24px; padding:30px;
+    position:relative; width:100%; max-width:472px; border-radius:26px; padding:32px;
     background:linear-gradient(180deg,var(--card),var(--card2));
     border:1px solid var(--stroke);
-    backdrop-filter:blur(18px) saturate(1.2); -webkit-backdrop-filter:blur(18px) saturate(1.2);
-    box-shadow:var(--shadow), inset 0 1px 0 rgba(255,255,255,.08);
+    backdrop-filter:blur(22px) saturate(1.35); -webkit-backdrop-filter:blur(22px) saturate(1.35);
+    box-shadow:var(--shadow), inset 0 1px 0 var(--sheen);
   }
   /* Garis aksen gradien tipis di tepi atas kartu */
   .card::before{
@@ -58,8 +63,10 @@
     box-shadow:0 8px 22px var(--glow), inset 0 1px 0 rgba(255,255,255,.35);
   }
   .logo svg{width:25px;height:25px;fill:#fff; filter:drop-shadow(0 1px 2px rgba(0,0,0,.25))}
-  h1{font-size:20px; margin:0; letter-spacing:-.2px; font-weight:650}
-  .sub{color:var(--muted); font-size:13px; margin:2px 0 20px}
+  h1{font-size:20.5px; margin:0; letter-spacing:-.4px; font-weight:680;
+    background:linear-gradient(120deg,var(--text) 30%,var(--tg3)); -webkit-background-clip:text;
+    background-clip:text; -webkit-text-fill-color:transparent}
+  .sub{color:var(--muted); font-size:12.75px; margin:2px 0 20px; letter-spacing:.05px}
   .themebtn{
     margin-left:auto; flex:0 0 auto; width:40px; height:40px; border-radius:13px;
     border:1px solid var(--stroke); background:var(--chip); color:var(--text);
@@ -67,16 +74,18 @@
     transition:transform .18s, filter .18s, background .18s;
   }
   .themebtn:hover{filter:brightness(1.15); transform:rotate(-12deg) scale(1.05); background:var(--accent-soft)}
-  label{display:block; font-size:13px; color:var(--muted); margin:14px 0 6px}
+  label{display:block; font-size:12.5px; color:var(--muted); margin:14px 0 6px;
+    font-weight:550; letter-spacing:.15px}
   .labelrow{display:flex; align-items:baseline; justify-content:space-between; margin:14px 0 6px}
   .labelrow label{margin:0}
   .counter{font-size:11.5px; color:var(--muted)}
   .counter.over{color:var(--err)}
   input,textarea,select{
     width:100%; background:var(--field); border:1px solid var(--stroke);
-    color:var(--text); border-radius:13px; padding:12px 14px; font-size:14px;
-    font-family:inherit; outline:none; transition:border .18s, box-shadow .18s, background .18s;
-    box-shadow:inset 0 1px 2px rgba(0,0,0,.12);
+    color:var(--text); border-radius:14px; padding:12.5px 15px; font-size:14px;
+    font-family:inherit; letter-spacing:.1px; outline:none;
+    transition:border .2s, box-shadow .2s, background .2s, transform .18s cubic-bezier(.34,1.56,.64,1);
+    box-shadow:inset 0 1px 2px rgba(0,0,0,.1);
   }
   input::placeholder,textarea::placeholder{color:var(--muted); opacity:.7}
   input:hover,textarea:hover,select:hover{border-color:var(--stroke)}
