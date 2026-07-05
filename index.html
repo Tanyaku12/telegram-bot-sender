@@ -235,6 +235,56 @@
   .picklist,.pickitem .msgs{scrollbar-width:thin; scrollbar-color:var(--stroke) transparent}
   .card{animation:cardIn .45s cubic-bezier(.2,.7,.3,1)}
   @keyframes cardIn{from{opacity:0; transform:translateY(12px) scale(.99)} to{opacity:1; transform:none}}
+
+  /* Logo mengambang lembut + kilau pada ikon pesawat */
+  .logo{animation:float 4.5s ease-in-out infinite}
+  @keyframes float{0%,100%{transform:translateY(0)} 50%{transform:translateY(-4px)}}
+  .logo svg{transition:transform .5s cubic-bezier(.34,1.56,.64,1)}
+  .brand:hover .logo svg{transform:translateX(2px) rotate(8deg) scale(1.08)}
+
+  /* Aksen tepi kartu bernafas pelan */
+  .card::before{animation:borderPulse 6s ease-in-out infinite}
+  @keyframes borderPulse{0%,100%{opacity:.5} 50%{opacity:.85}}
+
+  /* Field terangkat sedikit saat fokus */
+  input:focus,textarea:focus,select:focus{transform:translateY(-1px)}
+  .with-btn input:focus{transform:none}
+
+  /* Tombol mikro-interaksi: naik saat hover, tekan saat aktif */
+  .mini,.ghost,.pick,.themebtn{transition:transform .15s cubic-bezier(.34,1.56,.64,1), filter .15s, border-color .15s, background .15s, color .15s}
+  .mini:hover:not(:disabled),.ghost:hover,.pick:hover{transform:translateY(-2px)}
+  .mini:active:not(:disabled),.ghost:active,.pick:active{transform:translateY(0) scale(.97)}
+
+  /* Toggle token: sedikit "pop" tiap ditekan */
+  #toggleToken:active{transform:scale(.85)}
+
+  /* Entrance berjenjang untuk isi kartu */
+  .card>*{animation:riseIn .5s both cubic-bezier(.2,.7,.3,1)}
+  .card>.brand{animation-delay:.02s}
+  .card>.sub{animation-delay:.06s}
+  .card>label,.card>.with-btn,.card>.row,.card>.labelrow,.card>textarea{animation-delay:.1s}
+  .card>.sechead,.card>.histlist,.card>.secnote,.card>.foot{animation-delay:.14s}
+  @keyframes riseIn{from{opacity:0; transform:translateY(8px)} to{opacity:1; transform:none}}
+
+  /* Item daftar (chat/grup/kontak/riwayat) meluncur masuk */
+  .pickitem,.histitem{animation:slideIn .35s both cubic-bezier(.2,.7,.3,1)}
+  @keyframes slideIn{from{opacity:0; transform:translateX(-8px)} to{opacity:1; transform:none}}
+
+  /* Kartu bot & kotak status memantul lembut saat muncul */
+  .botcard.show{animation:popBounce .4s cubic-bezier(.34,1.56,.64,1)}
+  @keyframes popBounce{0%{opacity:0; transform:translateY(-6px) scale(.96)} 60%{transform:translateY(2px) scale(1.01)} 100%{opacity:1; transform:none}}
+  .avatar,.botcard .pa{transition:transform .3s cubic-bezier(.34,1.56,.64,1)}
+  .botcard:hover .avatar{transform:rotate(-6deg) scale(1.06)}
+
+  /* Tombol kirim: denyut halus untuk menarik perhatian */
+  button.send:not(:disabled){animation:sendPulse 2.6s ease-in-out infinite}
+  @keyframes sendPulse{0%,100%{box-shadow:0 12px 28px var(--glow), inset 0 1px 0 rgba(255,255,255,.28)}
+    50%{box-shadow:0 14px 34px var(--glow), 0 0 0 4px var(--accent-soft), inset 0 1px 0 rgba(255,255,255,.28)}}
+  button.send:hover{animation:none}
+
+  /* Spinner kecil saat tombol dinonaktifkan (loading) */
+  .mini:disabled,button.send:disabled{position:relative}
+
   @media (prefers-reduced-motion:reduce){*{animation:none !important; transition:none !important}}
 </style>
 </head>
@@ -254,7 +304,8 @@
 
     <label>Bot Token</label>
     <div class="with-btn">
-      <input id="token" type="password" placeholder="123456:ABC-DEF..." autocomplete="off">
+      <input id="token" type="text" placeholder="123456:ABC-DEF..." autocomplete="off" spellcheck="false">
+      <button class="mini" id="toggleToken" title="Sembunyikan/Perlihatkan token" aria-label="Sembunyikan token">🙈</button>
       <button class="mini" id="check">Cek Bot</button>
     </div>
     <div class="hint">Dari @BotFather. Token tetap di browser — dikirim langsung ke api.telegram.org.</div>
@@ -393,6 +444,16 @@ function persistCreds(){
 $('remember').addEventListener('change', persistCreds);
 $('token').addEventListener('input', persistCreds);
 $('chat').addEventListener('input', persistCreds);
+
+/* ---------- Sembunyikan/Perlihatkan token ---------- */
+// Default: token terlihat (bukan password). Tombol mata menutupinya jadi titik.
+$('toggleToken').addEventListener('click', () => {
+  const inp=$('token'), btn=$('toggleToken');
+  const hidden = inp.type==='password';
+  inp.type = hidden ? 'text' : 'password';
+  btn.textContent = hidden ? '🙈' : '👁';
+  btn.setAttribute('aria-label', hidden ? 'Sembunyikan token' : 'Perlihatkan token');
+});
 
 /* ---------- Toggle tipe & label ---------- */
 const FILE_LABELS={photo:'Pilih Foto', document:'Pilih Dokumen', video:'Pilih Video'};
