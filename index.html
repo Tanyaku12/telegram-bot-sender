@@ -312,6 +312,20 @@
   .tab:not(.active):hover{color:var(--text); background:var(--chip)}
   .tab:active{transform:scale(.96)}
   .topbar .themebtn{align-self:stretch; height:auto; width:54px; border-radius:16px; margin:0; font-size:19px}
+  /* Jam realtime di topbar */
+  .clock{align-self:stretch; display:flex; align-items:center; justify-content:center; gap:6px;
+    padding:0 14px; border-radius:16px; border:1px solid var(--stroke);
+    background:linear-gradient(180deg,var(--card),var(--card2));
+    backdrop-filter:blur(22px) saturate(1.35); -webkit-backdrop-filter:blur(22px) saturate(1.35);
+    box-shadow:var(--shadow), inset 0 1px 0 var(--sheen);
+    font-family:ui-monospace,"SF Mono",Menlo,monospace; font-size:15px; font-weight:650;
+    letter-spacing:.5px; color:var(--text); white-space:nowrap; font-variant-numeric:tabular-nums;
+    user-select:none}
+  .clock .dot{width:7px; height:7px; border-radius:50%;
+    background:linear-gradient(135deg,var(--tg3),var(--tg2)); box-shadow:0 0 8px var(--glow);
+    animation:blink 1s steps(2,start) infinite}
+  .clock .tz{font-size:10px; color:var(--muted); font-weight:700; letter-spacing:.6px}
+  @keyframes blink{50%{opacity:.25}}
 
   /* Kartu hasil link (laman Buka Grup) */
   .result{margin-top:14px; display:none; flex-direction:column; gap:10px}
@@ -356,6 +370,7 @@
       <button class="tab active" id="tabSend" data-view="send">✉️ Kirim Pesan</button>
       <button class="tab" id="tabJoin" data-view="join">🔗 Buka Grup</button>
     </div>
+    <div class="clock" id="clock" title="Waktu Jakarta (WIB)"><span class="dot"></span><span id="clockTime">00:00:00</span><span class="tz">WIB</span></div>
     <button class="themebtn" id="theme" title="Ganti tema">🌙</button>
   </div>
   <div class="card" id="pageSend">
@@ -541,6 +556,15 @@ $('theme').addEventListener('click', () => {
   const next = document.documentElement.getAttribute('data-theme')==='dark' ? 'light' : 'dark';
   localStorage.setItem(THEME_KEY, next); applyTheme(next);
 });
+
+/* ---------- Jam realtime (HH:MM:SS) ---------- */
+(function startClock(){
+  const el=$('clockTime');
+  // Selalu pakai waktu Jakarta (WIB) apa pun zona waktu perangkat
+  const fmt=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Jakarta',hour12:false,hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  function tick(){ el.textContent=fmt.format(new Date()); }
+  tick(); setInterval(tick, 1000);
+})();
 
 /* ---------- Simpan token & chat ID ---------- */
 const SAVE_KEY='tgb_creds';
