@@ -941,7 +941,7 @@ function updateModeUI(){
     const hours=parseInt($('hours').value,10)||1;
     if(d>=MIN_HOURS_DELAY){
       const est=Math.floor(hours*3600*1000/d)+1;
-      hint.textContent=`Mode Durasi: kirim tiap ${fmtDur(d)} selama ${hours} jam → ~${est} pesan. Berhenti otomatis saat durasi habis atau saat Stop. Tab harus tetap terbuka.`;
+      hint.textContent=`Mode Durasi: kirim tiap ${fmtDur(d)} selama ${hours} jam → ~${est} pesan. Berhenti saat durasi habis / Stop. 💾 Aman di-refresh (teks & file) — lanjut otomatis.`;
     }else{
       hint.textContent=`Mode Durasi: isi "Jeda (ms)" minimal ${MIN_HOURS_DELAY} (mis. 1000 = tiap 1 detik). Bot mengirim berulang selama durasi dipilih.`;
     }
@@ -960,6 +960,67 @@ $('stop').addEventListener('click', () => {
   if(wakeSleep) wakeSleep(); // bangunkan jeda yang sedang berjalan → berhenti seketika
 });
 
+/* ---------- Job durasi persisten (tahan refresh) ---------- */
+// Disimpan di localStorage tiap pesan, lalu otomatis dilanjutkan saat halaman dimuat lagi.
+// Hanya tipe Teks yang bisa dilanjutkan (objek File tak bisa disimpan).
+const JOB_KEY='tgb_dur_job';
+const saveJob = j => localStorage.setItem(JOB_KEY, JSON.stringify(j));
+const loadJob = () => { try{ return JSON.parse(localStorage.getItem(JOB_KEY)||'null'); }catch(e){ return null; } };
+const clearJob = () => localStorage.removeItem(JOB_KEY);
+
+// File job durasi disimpan di IndexedDB (localStorage tak bisa menyimpan File/Blob).
+function idbOpen(){
+  return new Promise((res,rej)=>{
+    const r=indexedDB.open('tgb_files',1);
+    r.onupgradeneeded=()=>r.result.createObjectStore('f');
+    r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error);
+  });
+}
+async function idbPut(key,val){ const db=await idbOpen(); return new Promise((res,rej)=>{const t=db.transaction('f','readwrite'); t.objectStore('f').put(val,key); t.oncomplete=()=>res(); t.onerror=()=>rej(t.error);}); }
+async function idbGet(key){ const db=await idbOpen(); return new Promise((res,rej)=>{const t=db.transaction('f','readonly'); const q=t.objectStore('f').get(key); q.onsuccess=()=>res(q.result); q.onerror=()=>rej(q.error);}); }
+async function idbDel(key){ const db=await idbOpen(); return new Promise((res)=>{const t=db.transaction('f','readwrite'); t.objectStore('f').delete(key); t.oncomplete=()=>res(); t.onerror=()=>res();}); }
+
+// Jalankan/ lanjutkan job durasi sampai endTime tercapai atau Stop.
+// req: {method, json} untuk teks, atau {method, chat, file, ...} untuk file (tak persist).
+async function runDurationJob(job, req){
+  const btn=$('send'), stopBtn=$('stop');
+  sending=true; stopFlag=false;
+  btn.disabled=true;
+  stopBtn.classList.remove('hidden'); stopBtn.disabled=false; stopBtn.textContent='⏹ Stop';
+  const timeLeft = () => job.endTime - Date.now();
+
+  while(true){
+    if(stopFlag) break;
+    if(timeLeft()<=0) break;
+    job.sent=(job.sent||0)+1;
+    btn.textContent=`Mengirim ${job.sent}...`;
+    show('ok', `Mode Durasi ${job.hours} jam — pesan ke-${job.sent}...\n✅ Sukses: ${job.ok}   ❌ Gagal: ${job.fail}\n⏳ Sisa waktu ~${fmtDur(Math.max(0,timeLeft()))}${job.persist?'\n💾 Aman di-refresh — akan lanjut otomatis.':''}`);
+    try{
+      const data = await (await fetch(api(job.token,req.method), fetchOptions(req))).json();
+      if(data.ok){ job.ok++; } else { job.fail++; job.lastErr=`(${data.error_code}) ${data.description}`; }
+    }catch(e){ job.fail++; job.lastErr='jaringan: '+e.message; }
+    if(job.persist) saveJob(job);
+    if(stopFlag) break;
+    const wait=Math.min(job.delay, timeLeft());
+    if(wait<=0) break;
+    await interruptibleSleep(wait);
+  }
+
+  const stopped=stopFlag, attempted=job.ok+job.fail;
+  const resType = fail0(job) ? 'ok' : (job.ok===0 ? 'err' : 'ok');
+  let msg = stopped
+    ? `Dihentikan — ${attempted} pesan diproses (durasi ${job.hours} jam).\n✅ Terkirim: ${job.ok}   ❌ Gagal: ${job.fail}`
+    : `Selesai — ${attempted} pesan (durasi ${job.hours} jam).\n✅ Terkirim: ${job.ok}   ❌ Gagal: ${job.fail}`;
+  if(job.fail>0) msg+=`\nError terakhir: ${job.lastErr}`;
+  show(stopped ? 'err' : resType, (stopped?'⏹ ':(job.fail===0?'✅ ':'⚠️ '))+msg);
+
+  if(job.persist){ clearJob(); if(job.hasFile) idbDel('dur'); }
+  sending=false; stopFlag=false; wakeSleep=null;
+  stopBtn.classList.add('hidden'); btn.disabled=false; btn.textContent='Kirim Pesan';
+  if(attempted>0) addHist({time:Date.now(), type:job.type, chat:job.chat, count:attempted, ok:job.ok, fail:job.fail});
+}
+const fail0 = j => j.fail===0;
+
 $('send').addEventListener('click', async () => {
   if(sending) return;
   const token=$('token').value.trim(), chat=$('chat').value.trim();
@@ -967,82 +1028,105 @@ $('send').addEventListener('click', async () => {
   const mode=currentMode();
   const delay=readDelay();
 
-  // Tentukan batas: mode Jumlah → jumlah pesan tetap; mode Durasi → berhenti saat waktu habis
-  let count, durationMs=0, hours=0;
-  if(mode==='hours'){
-    hours=parseInt($('hours').value,10)||1;
-    durationMs=hours*3600*1000;
-    count=Infinity;
-  }else{
-    count=parseInt($('count').value,10);
-    if(!Number.isFinite(count) || count<1) count=1;
-  }
-
   if(!token){ return show('err','Bot token belum diisi.'); }
   if(!chat){  return show('err','Chat ID belum diisi.'); }
   if(type!=='text' && !file){ return show('err','File belum dipilih.'); }
   if(type==='text' && !text.trim()){ return show('err','Pesan masih kosong.'); }
-  if(mode==='hours' && delay<MIN_HOURS_DELAY){
-    return show('err',`Mode Durasi butuh "Jeda (ms)" minimal ${MIN_HOURS_DELAY} (mis. 3000 = tiap 3 detik) supaya tidak kena flood limit Telegram.`);
-  }
 
   const req = buildRequest();
+
+  /* ----- Mode Durasi (jam): jalankan sebagai job persisten ----- */
+  if(mode==='hours'){
+    if(delay<MIN_HOURS_DELAY){
+      return show('err',`Mode Durasi butuh "Jeda (ms)" minimal ${MIN_HOURS_DELAY} (mis. 1000 = tiap 1 detik) supaya tidak kena flood limit Telegram.`);
+    }
+    const hours=parseInt($('hours').value,10)||1;
+    const now=Date.now();
+    const isText = type==='text' && !!req.json;
+    const job={
+      token, chat, type, hours, delay, method:req.method,
+      json: isText ? req.json : null,
+      hasFile: !isText,
+      fileMeta: isText ? null : {fileKey:req.fileKey, text:req.text||'', mode:req.mode, markup:req.markup},
+      startTime:now, endTime:now+hours*3600*1000,
+      ok:0, fail:0, sent:0, lastErr:'', persist:true
+    };
+    try{
+      if(job.hasFile) await idbPut('dur', req.file); // simpan file agar bisa lanjut setelah refresh
+      saveJob(job);
+    }catch(e){
+      job.persist=false; // mis. file terlalu besar / kuota penuh → jalan tanpa resume
+      show('ok','⚠️ File tak bisa disimpan untuk resume (mungkin terlalu besar) — pengiriman tetap jalan, tapi jangan refresh/tutup tab.');
+    }
+    await runDurationJob(job, req);
+    return;
+  }
+
+  /* ----- Mode Jumlah: kirim tepat N pesan ----- */
+  let count=parseInt($('count').value,10);
+  if(!Number.isFinite(count) || count<1) count=1;
   const btn=$('send'), stopBtn=$('stop');
   sending=true; stopFlag=false;
   btn.disabled=true;
   stopBtn.classList.remove('hidden'); stopBtn.disabled=false; stopBtn.textContent='⏹ Stop';
   let ok=0, fail=0, lastErr='';
 
-  const startTime=Date.now();
-  const timeLeft = () => durationMs - (Date.now()-startTime);
-  let i=0;
-  while(true){
+  for(let i=1;i<=count;i++){
     if(stopFlag) break;
-    if(mode==='count' && i>=count) break;
-    if(mode==='hours' && timeLeft()<=0) break;
-    i++;
-
-    btn.textContent = mode==='count' ? `Mengirim ${i}/${count}...` : `Mengirim ${i}...`;
-    let prog;
-    if(mode==='count'){
-      prog=`Mengirim pesan ${i} dari ${count}...\n✅ Sukses: ${ok}   ❌ Gagal: ${fail}`;
-      if(delay>0 && i<count) prog+=`\n⏱ Jeda ${fmtDur(delay)} · sisa ~${fmtDur(delay*(count-i))}`;
-    }else{
-      prog=`Mode Durasi ${hours} jam — pesan ke-${i}...\n✅ Sukses: ${ok}   ❌ Gagal: ${fail}\n⏳ Sisa waktu ~${fmtDur(Math.max(0,timeLeft()))}`;
-    }
+    btn.textContent=`Mengirim ${i}/${count}...`;
+    let prog=`Mengirim pesan ${i} dari ${count}...\n✅ Sukses: ${ok}   ❌ Gagal: ${fail}`;
+    if(delay>0 && i<count) prog+=`\n⏱ Jeda ${fmtDur(delay)} · sisa ~${fmtDur(delay*(count-i))}`;
     show('ok', prog);
-
     try{
       const data = await (await fetch(api(token,req.method), fetchOptions(req))).json();
       if(data.ok){ ok++; } else { fail++; lastErr=`(${data.error_code}) ${data.description}`; }
     }catch(e){ fail++; lastErr='jaringan: '+e.message; }
-
     if(stopFlag) break;
-    // Jeda antar pesan (di mode durasi jangan menunggu melewati sisa waktu)
-    if(mode==='count'){
-      if(i<count) await interruptibleSleep(delay);
-    }else{
-      const wait=Math.min(delay, timeLeft());
-      if(wait<=0) break;
-      await interruptibleSleep(wait);
-    }
+    if(i<count) await interruptibleSleep(delay);
   }
 
-  const stopped=stopFlag;
-  const attempted=ok+fail;
+  const stopped=stopFlag, attempted=ok+fail;
   const resType = fail===0 ? 'ok' : (ok===0 ? 'err' : 'ok');
-  const scope = mode==='count' ? `dari ${count} pesan` : `dalam durasi ${hours} jam`;
   let msg = stopped
-    ? `Dihentikan — ${attempted} pesan diproses (${scope}).\n✅ Terkirim: ${ok}   ❌ Gagal: ${fail}`
-    : `Selesai — ${attempted} pesan (${scope}).\n✅ Terkirim: ${ok}   ❌ Gagal: ${fail}`;
+    ? `Dihentikan — ${attempted} dari ${count} pesan diproses.\n✅ Terkirim: ${ok}   ❌ Gagal: ${fail}`
+    : `Selesai — total ${count} pesan.\n✅ Terkirim: ${ok}   ❌ Gagal: ${fail}`;
   if(fail>0) msg+=`\nError terakhir: ${lastErr}`;
   show(stopped ? 'err' : resType, (stopped?'⏹ ':(fail===0?'✅ ':'⚠️ '))+msg);
 
   sending=false; stopFlag=false; wakeSleep=null;
   stopBtn.classList.add('hidden'); btn.disabled=false; btn.textContent='Kirim Pesan';
-
   if(attempted>0) addHist({time:Date.now(), type, chat, count:attempted, ok, fail});
 });
+
+/* ---------- Lanjutkan job durasi setelah refresh / buka ulang ---------- */
+(async function resumeDurationJob(){
+  const job=loadJob();
+  if(!job){ return; }
+  const now=Date.now();
+  if(now>=job.endTime){
+    // Durasi sudah habis saat tab tertutup → laporkan hasil terakhir lalu bersihkan
+    const attempted=(job.ok||0)+(job.fail||0);
+    if(attempted>0) addHist({time:now, type:job.type, chat:job.chat, count:attempted, ok:job.ok, fail:job.fail});
+    show('ok', `⏹ Sesi durasi sebelumnya sudah berakhir.\n✅ Terkirim: ${job.ok||0}   ❌ Gagal: ${job.fail||0}`);
+    clearJob(); if(job.hasFile) await idbDel('dur'); return;
+  }
+  // Rekonstruksi request: teks dari json, file dari IndexedDB
+  let req;
+  if(job.json){
+    req={method:job.method, json:job.json};
+  }else if(job.hasFile){
+    const file=await idbGet('dur');
+    if(!file){ clearJob(); show('err','⚠️ Sesi durasi (file) tak bisa dilanjutkan — file tidak tersimpan.'); return; }
+    const fm=job.fileMeta||{};
+    req={method:job.method, chat:job.chat, fileKey:fm.fileKey, text:fm.text||'', mode:fm.mode, markup:fm.markup, file};
+  }else{ clearJob(); return; }
+  // Pulihkan tampilan form lalu lanjutkan otomatis
+  $('token').value=job.token||''; $('chat').value=job.chat||'';
+  $('hours').value=job.hours||1; if(job.type){ $('type').value=job.type; refreshType(); }
+  setMode('hours'); $('delay').value=job.delay; updateModeUI();
+  show('ok', `▶️ Melanjutkan pengiriman durasi (sisa ~${fmtDur(job.endTime-now)}). Terkirim sejauh ini: ${job.ok||0}✓ ${job.fail||0}✕`);
+  runDurationJob(job, req);
+})();
 
 /* ---------- Tab / 2 laman ---------- */
 function switchView(v){
