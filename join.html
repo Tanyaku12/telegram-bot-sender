@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Buka Grup via ID — Telegram</title>
+<style>
+  :root[data-theme="dark"]{
+    --bg1:#05080f; --bg2:#0a1120; --bg3:#0f1a36; --card:rgba(255,255,255,.05);
+    --card2:rgba(255,255,255,.015); --stroke:rgba(255,255,255,.09);
+    --stroke2:rgba(255,255,255,.045); --tg:#3aa8e8; --tg2:#2b93d6; --tg3:#6fd0f9;
+    --text:#eef3fb; --muted:#8496b4; --ok:#43d69a; --err:#ff7a7a;
+    --field:rgba(0,0,0,.22); --chip:rgba(255,255,255,.055);
+    --shadow:0 1px 1px rgba(0,0,0,.4), 0 12px 28px rgba(0,0,0,.32), 0 40px 80px rgba(0,0,0,.45);
+    --glow:rgba(58,168,232,.42); --accent-soft:rgba(58,168,232,.13);
+    --sheen:rgba(255,255,255,.08); --tint:rgba(120,180,255,.04);
+  }
+  :root[data-theme="light"]{
+    --bg1:#eaf1fb; --bg2:#dfeaf8; --bg3:#f5f9fe; --card:rgba(255,255,255,.72);
+    --card2:rgba(255,255,255,.42); --stroke:rgba(28,52,88,.1);
+    --stroke2:rgba(28,52,88,.05); --tg:#1c8fd0; --tg2:#1275ab; --tg3:#37a7e0;
+    --text:#132539; --muted:#5b6d86; --ok:#0e8f5a; --err:#d8453f;
+    --field:rgba(255,255,255,.85); --chip:rgba(28,52,88,.04);
+    --shadow:0 1px 1px rgba(40,70,120,.06), 0 10px 24px rgba(40,70,120,.1), 0 30px 60px rgba(40,70,120,.14);
+    --glow:rgba(28,143,208,.3); --accent-soft:rgba(28,143,208,.09);
+    --sheen:rgba(255,255,255,.75); --tint:rgba(255,255,255,.5);
+  }
+  html{scroll-behavior:smooth}
+  *{box-sizing:border-box}
+  body{
+    margin:0; min-height:100vh;
+    font-family:"Inter","SF Pro Display",-apple-system,"Segoe UI",system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; letter-spacing:.1px;
+    color:var(--text);
+    background:
+      radial-gradient(1100px 680px at 84% -14%, var(--glow), transparent 60%),
+      radial-gradient(820px 560px at -14% 112%, rgba(111,208,249,.14), transparent 60%),
+      radial-gradient(700px 460px at 50% 44%, var(--tint), transparent 72%),
+      linear-gradient(160deg,var(--bg1) 0%, var(--bg2) 52%, var(--bg3) 100%);
+    background-attachment:fixed;
+    display:flex; align-items:flex-start; justify-content:center; padding:32px 20px;
+  }
+  .card{
+    position:relative; width:100%; max-width:472px; border-radius:26px; padding:32px;
+    background:linear-gradient(180deg,var(--card),var(--card2));
+    border:1px solid var(--stroke);
+    backdrop-filter:blur(22px) saturate(1.35); -webkit-backdrop-filter:blur(22px) saturate(1.35);
+    box-shadow:var(--shadow), inset 0 1px 0 var(--sheen);
+    animation:cardIn .45s cubic-bezier(.2,.7,.3,1);
+  }
+  @keyframes cardIn{from{opacity:0; transform:translateY(12px) scale(.99)} to{opacity:1; transform:none}}
+  .card::before{
+    content:""; position:absolute; inset:0; border-radius:inherit; padding:1px; pointer-events:none;
+    background:linear-gradient(140deg, var(--tg3), transparent 35%, transparent 65%, rgba(255,255,255,.14));
+    -webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite:xor; mask-composite:exclude; opacity:.5;
+  }
+  .card>*{position:relative}
+  .brand{display:flex; align-items:center; gap:13px; margin-bottom:6px}
+  .logo{
+    position:relative; width:46px; height:46px; border-radius:14px; display:grid; place-items:center;
+    background:linear-gradient(135deg,var(--tg3),var(--tg2)); flex:0 0 auto;
+    box-shadow:0 8px 22px var(--glow), inset 0 1px 0 rgba(255,255,255,.35);
+  }
+  .logo svg{width:25px;height:25px;fill:#fff; filter:drop-shadow(0 1px 2px rgba(0,0,0,.25))}
+  h1{font-size:20.5px; margin:0; letter-spacing:-.4px; font-weight:680;
+    background:linear-gradient(120deg,var(--text) 30%,var(--tg3)); -webkit-background-clip:text;
+    background-clip:text; -webkit-text-fill-color:transparent}
+  .sub{color:var(--muted); font-size:12.75px; margin:2px 0 20px; letter-spacing:.05px}
+  .themebtn{
+    margin-left:auto; flex:0 0 auto; width:40px; height:40px; border-radius:13px;
+    border:1px solid var(--stroke); background:var(--chip); color:var(--text);
+    cursor:pointer; font-size:18px; display:grid; place-items:center;
+    transition:transform .18s, filter .18s, background .18s;
+  }
+  .themebtn:hover{filter:brightness(1.15); transform:rotate(-12deg) scale(1.05); background:var(--accent-soft)}
+  label{display:block; font-size:12.5px; color:var(--muted); margin:14px 0 6px;
+    font-weight:550; letter-spacing:.15px}
+  input{
+    width:100%; background:var(--field); border:1px solid var(--stroke);
+    color:var(--text); border-radius:14px; padding:12.5px 15px; font-size:14px;
+    font-family:inherit; letter-spacing:.1px; outline:none;
+    transition:border .2s, box-shadow .2s, background .2s;
+    box-shadow:inset 0 1px 2px rgba(0,0,0,.1);
+  }
+  input::placeholder{color:var(--muted); opacity:.7}
+  input:focus{border-color:var(--tg); box-shadow:0 0 0 3px var(--accent-soft), inset 0 1px 2px rgba(0,0,0,.12)}
+  .with-btn{display:flex; gap:8px}
+  .with-btn input{flex:1}
+  .mini{
+    flex:0 0 auto; width:auto; margin:0; padding:0 16px; font-size:13px; font-weight:600;
+    border-radius:12px; border:1px solid var(--stroke); background:var(--chip);
+    color:var(--text); cursor:pointer; white-space:nowrap;
+    transition:filter .15s, border-color .15s, background .15s;
+  }
+  .mini:hover{filter:brightness(1.08); border-color:var(--tg); background:var(--accent-soft)}
+  .mini:disabled{opacity:.6; cursor:not-allowed}
+  .hint{font-size:11.5px; color:var(--muted); margin-top:5px; line-height:1.45}
+  code{font-family:ui-monospace,"SF Mono",Menlo,monospace; font-size:11.5px;
+    background:var(--chip); padding:1px 5px; border-radius:5px; border:1px solid var(--stroke2)}
+  button.send{
+    position:relative; overflow:hidden;
+    width:100%; margin-top:22px; border:0; cursor:pointer; color:#fff;
+    background:linear-gradient(135deg,var(--tg3),var(--tg2)); font-size:15px; font-weight:650; letter-spacing:.2px;
+    padding:14px; border-radius:14px; transition:transform .1s, filter .18s, box-shadow .18s;
+    box-shadow:0 12px 28px var(--glow), inset 0 1px 0 rgba(255,255,255,.28);
+  }
+  button.send:hover{filter:brightness(1.07)}
+  button.send:active{transform:translateY(1px) scale(.995)}
+  button:disabled{opacity:.55; cursor:not-allowed; filter:none}
+  .out{
+    margin-top:16px; font-size:13px; border-radius:13px; padding:12px 15px;
+    display:none; white-space:pre-wrap; word-break:break-word; line-height:1.5;
+  }
+  .out.show{display:block; animation:pop .28s ease}
+  .out.ok{background:linear-gradient(135deg,rgba(62,207,142,.16),rgba(62,207,142,.06)); border:1px solid rgba(62,207,142,.35); color:var(--ok)}
+  .out.err{background:linear-gradient(135deg,rgba(255,107,107,.14),rgba(255,107,107,.05)); border:1px solid rgba(255,107,107,.35); color:var(--err)}
+  @keyframes pop{from{opacity:0; transform:translateY(-4px)} to{opacity:1; transform:none}}
+
+  /* Kartu hasil link */
+  .result{margin-top:14px; display:none; flex-direction:column; gap:10px}
+  .result.show{display:flex; animation:pop .3s ease}
+  .ginfo{display:flex; align-items:center; gap:12px; padding:13px 15px;
+    background:linear-gradient(135deg,var(--accent-soft),transparent);
+    border:1px solid rgba(42,171,238,.32); border-radius:14px}
+  .ginfo .pa{width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,var(--tg3),var(--tg2));
+    display:grid;place-items:center;color:#fff;font-weight:700;font-size:17px;flex:0 0 auto;
+    box-shadow:0 4px 12px var(--glow)}
+  .ginfo b{font-size:14px} .ginfo span{font-size:12px;color:var(--muted)}
+  .linkrow{
+    display:flex; align-items:center; gap:8px; padding:11px 13px; border-radius:13px;
+    border:1px solid var(--stroke); background:var(--field);
+  }
+  .linkrow .lk{flex:1; min-width:0; overflow:hidden}
+  .linkrow .lk small{display:block; font-size:10.5px; color:var(--muted); margin-bottom:2px}
+  .linkrow .lk a{font-size:13px; color:var(--tg); font-weight:600; word-break:break-all}
+  .linkrow .act{flex:0 0 auto; display:flex; gap:6px}
+  .iconbtn{border:1px solid var(--stroke); background:var(--chip); color:var(--text); cursor:pointer;
+    border-radius:10px; padding:7px 10px; font-size:13px; font-weight:600; white-space:nowrap;
+    transition:filter .15s, border-color .15s, background .15s}
+  .iconbtn:hover{border-color:var(--tg); background:var(--accent-soft)}
+  .iconbtn.go{background:linear-gradient(135deg,var(--tg3),var(--tg2)); color:#fff; border:0}
+  .foot{margin-top:20px; font-size:11px; color:var(--muted); text-align:center; line-height:1.5}
+  a{color:var(--tg); text-decoration:none}
+  .navlink{display:inline-flex; align-items:center; gap:6px; margin-top:2px; font-size:12.5px; font-weight:600}
+  @media (prefers-reduced-motion:reduce){*{animation:none !important; transition:none !important}}
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="brand">
+      <div class="logo">
+        <svg viewBox="0 0 24 24"><path d="M9.8 15.6 9.6 19c.4 0 .6-.2.8-.4l1.9-1.8 3.9 2.9c.7.4 1.2.2 1.4-.7l2.6-12c.2-1-.4-1.4-1-1.1L3.3 10.6c-1 .4-1 1-.2 1.2l4.3 1.3 9.9-6.2c.5-.3.9-.1.6.2z"/></svg>
+      </div>
+      <div>
+        <h1>Buka Grup via ID</h1>
+        <div class="sub" style="margin:0">ubah chat id jadi link t.me</div>
+      </div>
+      <button class="themebtn" id="theme" title="Ganti tema">🌙</button>
+    </div>
+    <div class="sub">Masukkan id grup/channel (mis. <code>-1003976179139</code>) atau <code>@username</code> → dapat link <code>t.me</code> yang langsung membuka grupnya di Telegram.</div>
+
+    <label>Bot Token (opsional)</label>
+    <input id="token" type="text" placeholder="123456:ABC-DEF..." autocomplete="off" spellcheck="false">
+    <div class="hint">Diisi otomatis dari halaman kirim pesan. Kalau diisi &amp; bot ada di grup itu, halaman ambil nama grup + link undangan resmi via <code>getChat</code>.</div>
+
+    <label>Chat ID / @username</label>
+    <div class="with-btn">
+      <input id="chat" type="text" placeholder="mis. -1003976179139 atau @namagrup" autocomplete="off">
+      <button class="mini" id="go">Buat Link</button>
+    </div>
+    <div class="hint">Grup/channel privat berformat <code>-100…</code>. Link privat (<code>t.me/c/…</code>) hanya membuka grup bagi yang <b>sudah jadi anggota</b>.</div>
+
+    <div id="out" class="out"></div>
+    <div class="result" id="result"></div>
+
+    <div class="foot">
+      <a class="navlink" href="index.html">← Kembali ke Kirim Pesan</a><br><br>
+      Bot tak bisa <i>join</i> grup sendiri via Bot API — halaman ini hanya membuat link menuju grup.
+    </div>
+  </div>
+
+<script>
+const $ = id => document.getElementById(id);
+const out = $('out');
+const show = (type,msg) => { out.className='out show '+type; out.textContent=msg; };
+const api = (token,method) => `https://api.telegram.org/bot${encodeURIComponent(token)}/${method}`;
+const esc = s => String(s).replace(/[&<>"]/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
+
+/* ---------- Tema (dibagi dengan halaman utama) ---------- */
+const THEME_KEY='tgb_theme';
+function applyTheme(t){
+  document.documentElement.setAttribute('data-theme', t);
+  $('theme').textContent = t==='dark' ? '🌙' : '☀️';
+}
+applyTheme(localStorage.getItem(THEME_KEY) || 'dark');
+$('theme').addEventListener('click', () => {
+  const next = document.documentElement.getAttribute('data-theme')==='dark' ? 'light' : 'dark';
+  localStorage.setItem(THEME_KEY, next); applyTheme(next);
+});
+
+/* ---------- Token dibagi dari halaman utama (localStorage tgb_creds) ---------- */
+const SAVE_KEY='tgb_creds';
+(function restore(){
+  try{ const s=JSON.parse(localStorage.getItem(SAVE_KEY)||'null'); if(s && s.token) $('token').value=s.token; }catch(e){}
+})();
+
+/* ---------- Ubah id → link t.me ---------- */
+// id supergroup/channel privat: -100XXXXXXXXXX → id internal = XXXXXXXXXX (buang -100)
+function internalId(id){
+  const s=String(id).trim();
+  const m=s.match(/^-100(\d+)$/);
+  return m ? m[1] : null;
+}
+
+function renderLinks({name, type, memberInfo, links}){
+  const res=$('result'); res.innerHTML='';
+  if(name!==null && name!==undefined){
+    const info=document.createElement('div'); info.className='ginfo';
+    info.innerHTML=`<div class="pa">${esc((name[0]||'?').toUpperCase())}</div>
+      <div style="min-width:0"><b>${esc(name)}</b><br>
+      <span>${type?esc(type):'grup'}${memberInfo?' · '+esc(memberInfo):''}</span></div>`;
+    res.appendChild(info);
+  }
+  for(const l of links){
+    const row=document.createElement('div'); row.className='linkrow';
+    row.innerHTML=`<div class="lk"><small>${esc(l.label)}</small><a href="${esc(l.url)}" target="_blank" rel="noopener">${esc(l.url)}</a></div>`;
+    const act=document.createElement('div'); act.className='act';
+    const copy=document.createElement('button'); copy.className='iconbtn'; copy.textContent='Salin';
+    copy.addEventListener('click', async () => {
+      try{ await navigator.clipboard.writeText(l.url); copy.textContent='Tersalin ✓'; setTimeout(()=>copy.textContent='Salin',1400); }
+      catch(e){ copy.textContent='Gagal'; }
+    });
+    const goA=document.createElement('a'); goA.className='iconbtn go'; goA.textContent='Buka'; goA.href=l.url; goA.target='_blank'; goA.rel='noopener';
+    act.appendChild(copy); act.appendChild(goA); row.appendChild(act);
+    res.appendChild(row);
+  }
+  res.classList.add('show');
+}
+
+async function buildLink(){
+  const raw=$('chat').value.trim();
+  const token=$('token').value.trim();
+  $('result').classList.remove('show');
+  if(!raw){ return show('err','Isi chat id atau @username dulu.'); }
+
+  // Kasus @username / username publik → langsung link publik (siapa pun bisa buka & join)
+  const uname = raw.replace(/^@/,'');
+  if(/^[a-zA-Z][\w]{3,}$/.test(uname) && !/^-?\d+$/.test(raw)){
+    show('ok','✅ Link publik dibuat.');
+    renderLinks({name:'@'+uname, type:'publik', links:[
+      {label:'Link publik (bisa join)', url:'https://t.me/'+uname}
+    ]});
+    return;
+  }
+
+  const btn=$('go'); btn.disabled=true; btn.textContent='...';
+  try{
+    const internal = internalId(raw);
+    const links=[];
+
+    // Kalau token diisi → coba getChat untuk info + username/invite link resmi
+    if(token){
+      let data=null;
+      try{ data = await (await fetch(api(token,'getChat')+'?chat_id='+encodeURIComponent(raw))).json(); }catch(e){}
+      if(data && data.ok){
+        const c=data.result;
+        const name=c.title || [c.first_name,c.last_name].filter(Boolean).join(' ') || c.username || 'Grup';
+        if(c.username) links.push({label:'Link publik (bisa join)', url:'https://t.me/'+c.username});
+        if(c.invite_link) links.push({label:'Link undangan resmi (bisa join)', url:c.invite_link});
+        if(internal) links.push({label:'Deep-link anggota (t.me/c)', url:'https://t.me/c/'+internal});
+        if(links.length===0 && internal) links.push({label:'Deep-link anggota (t.me/c)', url:'https://t.me/c/'+internal});
+        if(links.length===0){ show('err','Grup ditemukan tapi tanpa username/invite link, dan id bukan format -100… jadi tak ada link yang bisa dibuat.'); return; }
+        show('ok','✅ Info grup diambil via bot.');
+        renderLinks({name, type:c.type, memberInfo:'id '+c.id, links});
+        return;
+      }
+      if(data && !data.ok){
+        // getChat gagal (bot bukan anggota / id salah) → tetap fallback ke t.me/c kalau bisa
+        if(!internal){
+          show('err',`getChat gagal (${data.error_code}): ${data.description}\nDan id bukan format -100…, jadi tak bisa buat deep-link. Pastikan bot sudah jadi anggota grup, atau pakai @username.`);
+          return;
+        }
+        show('ok',`⚠️ getChat gagal (${data.error_code}) — bot mungkin belum jadi anggota. Pakai deep-link anggota (hanya berfungsi untuk yang sudah di dalam grup).`);
+        renderLinks({name:null, links:[{label:'Deep-link anggota (t.me/c)', url:'https://t.me/c/'+internal}]});
+        return;
+      }
+    }
+
+    // Tanpa token → hanya bisa deep-link dari format -100…
+    if(!internal){
+      show('err','Tanpa token, id harus format -100… (supergroup/channel) atau pakai @username. Untuk grup biasa/privat, isi Bot Token agar bisa ambil link undangan.');
+      return;
+    }
+    show('ok','✅ Deep-link dibuat (hanya membuka grup bagi anggota).');
+    renderLinks({name:null, links:[{label:'Deep-link anggota (t.me/c)', url:'https://t.me/c/'+internal}]});
+  }catch(e){ show('err','❌ Error: '+e.message); }
+  finally{ btn.disabled=false; btn.textContent='Buat Link'; }
+}
+$('go').addEventListener('click', buildLink);
+$('chat').addEventListener('keydown', e => { if(e.key==='Enter') buildLink(); });
+</script>
+</body>
+</html>

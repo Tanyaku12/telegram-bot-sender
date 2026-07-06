@@ -412,6 +412,7 @@
     <div class="histlist" id="contactlist"></div>
 
     <div class="foot">
+      <a href="join.html">🔗 Buka Grup via ID</a><br><br>
       Gunakan hanya untuk bot &amp; penerima yang sah. Mengirim pesan tak diminta melanggar
       <a href="https://telegram.org/tos" target="_blank" rel="noopener">Telegram ToS</a>.
     </div>
@@ -451,7 +452,7 @@ function persistCreds(){
   }
 }
 $('remember').addEventListener('change', persistCreds);
-$('token').addEventListener('input', persistCreds);
+$('token').addEventListener('input', () => { persistCreds(); renderGroups(); renderContacts(); });
 $('chat').addEventListener('input', persistCreds);
 
 /* ---------- Sembunyikan/Perlihatkan token ---------- */
@@ -584,7 +585,7 @@ async function fetchChats({silent=false}={}){
       list.classList.remove('show');
       if(silent){
         // Dipanggil dari Cek Bot: jangan berisik. Tampilkan info ringkas + arahkan ke data tersimpan.
-        const nG=Object.keys(loadStore(GROUP_KEY)).length, nU=Object.keys(loadStore(CONTACT_KEY)).length;
+        const nG=Object.keys(loadStore(GROUP_KEY())).length, nU=Object.keys(loadStore(CONTACT_KEY())).length;
         show('ok', `✅ Token valid.\nBelum ada update baru. Menampilkan data tersimpan: ${nG} grup · ${nU} pengguna.\n(Grup/user baru muncul setelah ada pesan masuk — minta user kirim /start lalu klik "Ambil Chat".)`);
       }else{
         show('err',
@@ -620,7 +621,7 @@ async function fetchChats({silent=false}={}){
       list.appendChild(item);
     }
     list.classList.add('show');
-    const nG=Object.keys(loadStore(GROUP_KEY)).length, nU=Object.keys(loadStore(CONTACT_KEY)).length;
+    const nG=Object.keys(loadStore(GROUP_KEY())).length, nU=Object.keys(loadStore(CONTACT_KEY())).length;
     show('ok', `${silent?'✅ Token valid. ':''}Ditemukan ${seen.size} chat dari ${total} update — ${nG} grup · ${nU} pengguna terekam. Klik salah satu untuk memilih.`);
   }catch(e){ if(!silent) show('err','❌ Error jaringan: '+e.message); }
   finally{ btn.disabled=false; btn.textContent='Ambil Chat'; }
@@ -705,7 +706,12 @@ renderHist();
 /* ---------- Pelacak grup & pengguna (kumulatif, best-effort) ---------- */
 // Bot API tak menyediakan daftar grup/pengguna penuh. Kita akumulasi sendiri dari
 // setiap chat yang terlihat di getUpdates + event my_chat_member (bot ditambah/dikeluarkan).
-const GROUP_KEY='tgb_groups', CONTACT_KEY='tgb_contacts';
+// Kunci penyimpanan dipisah PER-BOT (berdasarkan id token, bagian sebelum ':'),
+// jadi daftar grup/pengguna yang tampil hanya milik token yang sedang diisi.
+const GROUP_PREFIX='tgb_groups', CONTACT_PREFIX='tgb_contacts';
+const botId = () => ($('token').value.trim().split(':')[0] || '_none');
+const GROUP_KEY = () => `${GROUP_PREFIX}_${botId()}`;
+const CONTACT_KEY = () => `${CONTACT_PREFIX}_${botId()}`;
 const GROUP_TYPES=new Set(['group','supergroup','channel']);
 const loadStore = k => { try{ return JSON.parse(localStorage.getItem(k)||'{}'); }catch(e){ return {}; } };
 const saveStore = (k,o) => localStorage.setItem(k, JSON.stringify(o));
@@ -716,7 +722,7 @@ function chatName(c){
 function trackChat(c, date, mcm){
   const when = (date||0)*1000;
   if(GROUP_TYPES.has(c.type)){
-    const g=loadStore(GROUP_KEY);
+    const g=loadStore(GROUP_KEY());
     const prev=g[c.id]||{firstSeen:when||undefined};
     // Status keanggotaan bot dari my_chat_member (kalau ada), kalau tidak anggap masih member
     let member=prev.member!==false;
@@ -730,9 +736,9 @@ function trackChat(c, date, mcm){
       firstSeen:prev.firstSeen||when||undefined,
       lastSeen:Math.max(prev.lastSeen||0, when||0)||undefined,
     };
-    saveStore(GROUP_KEY,g);
+    saveStore(GROUP_KEY(),g);
   }else if(c.type==='private'){
-    const u=loadStore(CONTACT_KEY);
+    const u=loadStore(CONTACT_KEY());
     const prev=u[c.id]||{count:0, firstSeen:when||undefined};
     u[c.id]={
       id:c.id, name:chatName(c), username:c.username||'',
@@ -740,7 +746,7 @@ function trackChat(c, date, mcm){
       firstSeen:prev.firstSeen||when||undefined,
       lastSeen:Math.max(prev.lastSeen||0, when||0)||undefined,
     };
-    saveStore(CONTACT_KEY,u);
+    saveStore(CONTACT_KEY(),u);
   }
 }
 const fmtDate = ms => ms ? new Date(ms).toLocaleString('id-ID',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) : '—';
@@ -748,7 +754,7 @@ const byLastSeen = (a,b) => (b.lastSeen||0)-(a.lastSeen||0);
 const GTYPE_ICON={group:'👥', supergroup:'👥', channel:'📢'};
 
 function renderGroups(){
-  const g=Object.values(loadStore(GROUP_KEY)).sort(byLastSeen), el=$('grouplist');
+  const g=Object.values(loadStore(GROUP_KEY())).sort(byLastSeen), el=$('grouplist');
   if(g.length===0){ el.innerHTML='<div class="histempty">Belum ada grup terekam.</div>'; return; }
   el.innerHTML='';
   for(const e of g){
@@ -764,7 +770,7 @@ function renderGroups(){
   }
 }
 function renderContacts(){
-  const u=Object.values(loadStore(CONTACT_KEY)).sort(byLastSeen), el=$('contactlist');
+  const u=Object.values(loadStore(CONTACT_KEY())).sort(byLastSeen), el=$('contactlist');
   if(u.length===0){ el.innerHTML='<div class="histempty">Belum ada pengguna terekam.</div>'; return; }
   el.innerHTML='';
   for(const e of u){
@@ -777,8 +783,8 @@ function renderContacts(){
     el.appendChild(div);
   }
 }
-$('clearGroups').addEventListener('click', () => { if(confirm('Hapus semua rekaman grup?')){ localStorage.removeItem(GROUP_KEY); renderGroups(); } });
-$('clearContacts').addEventListener('click', () => { if(confirm('Hapus semua rekaman pengguna?')){ localStorage.removeItem(CONTACT_KEY); renderContacts(); } });
+$('clearGroups').addEventListener('click', () => { if(confirm('Hapus semua rekaman grup untuk token ini?')){ localStorage.removeItem(GROUP_KEY()); renderGroups(); } });
+$('clearContacts').addEventListener('click', () => { if(confirm('Hapus semua rekaman pengguna untuk token ini?')){ localStorage.removeItem(CONTACT_KEY()); renderContacts(); } });
 renderGroups(); renderContacts();
 
 /* ---------- Kirim ---------- */
