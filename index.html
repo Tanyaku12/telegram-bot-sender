@@ -335,6 +335,17 @@
   .iconbtn:hover{border-color:var(--tg); background:var(--accent-soft)}
   .iconbtn.go{background:linear-gradient(135deg,var(--tg3),var(--tg2)); color:#fff; border:0}
 
+  /* Segmen pilih mode (Jumlah / Durasi) */
+  .modeseg{display:flex; gap:6px; padding:5px; border-radius:14px; background:var(--field);
+    border:1px solid var(--stroke); box-shadow:inset 0 1px 2px rgba(0,0,0,.1)}
+  .segbtn{flex:1; border:0; background:transparent; color:var(--muted); font-family:inherit;
+    font-size:13px; font-weight:600; letter-spacing:.1px; padding:9px 8px; border-radius:10px;
+    cursor:pointer; transition:color .18s, background .18s, box-shadow .2s, transform .15s cubic-bezier(.34,1.56,.64,1)}
+  .segbtn.active{background:linear-gradient(135deg,var(--tg3),var(--tg2)); color:#fff;
+    box-shadow:0 5px 14px var(--glow), inset 0 1px 0 rgba(255,255,255,.28)}
+  .segbtn:not(.active):hover{color:var(--text); background:var(--chip)}
+  .segbtn:active{transform:scale(.97)}
+
   @media (prefers-reduced-motion:reduce){*{animation:none !important; transition:none !important}}
 </style>
 </head>
@@ -421,22 +432,38 @@
     </div>
     <div class="hint">Isi keduanya untuk menambahkan satu tombol tautan di bawah pesan.</div>
 
-    <div class="row">
-      <div>
-        <label>Jumlah</label>
+    <label>Batasi kirim dengan</label>
+    <div class="modeseg">
+      <button type="button" class="segbtn active" id="modeCount">🔢 Jumlah pesan</button>
+      <button type="button" class="segbtn" id="modeHours">⏱ Durasi (jam)</button>
+    </div>
+    <div class="row" style="margin-top:12px">
+      <div id="countWrap">
+        <label style="margin-top:0">Jumlah</label>
         <input id="count" type="number" min="1" step="1" value="1">
       </div>
+      <div id="hoursWrap" class="hidden">
+        <label style="margin-top:0">Durasi (jam)</label>
+        <select id="hours">
+          <option value="1">1 jam</option>
+          <option value="2">2 jam</option>
+          <option value="3">3 jam</option>
+          <option value="4">4 jam</option>
+          <option value="5">5 jam</option>
+        </select>
+      </div>
       <div>
-        <label>Jeda (ms)</label>
-        <input id="delay" type="number" min="0" max="10000" step="50" value="0">
+        <label style="margin-top:0">Jeda (ms)</label>
+        <input id="delay" type="number" min="0" max="3600000" step="50" value="250">
       </div>
     </div>
-    <div class="hint">Jumlah pesan (tanpa batas) dan jeda antar pesan supaya tidak kena rate limit.</div>
+    <div class="hint" id="sendHint">Mode Jumlah: kirim tepat sejumlah pesan, dengan jeda antar pesan supaya tidak kena rate limit.</div>
 
     <button class="ghost" id="previewBtn">👁 Pratinjau Pesan</button>
     <div class="preview" id="preview"><div class="bubble" id="bubble"></div></div>
 
     <button class="send" id="send">Kirim Pesan</button>
+    <button class="ghost hidden" id="stop">⏹ Stop</button>
     <div id="out" class="out"></div>
 
     <div class="sechead">
@@ -867,42 +894,154 @@ $('clearContacts').addEventListener('click', () => { if(confirm('Hapus semua rek
 renderGroups(); renderContacts();
 
 /* ---------- Kirim ---------- */
+// State pengiriman + jeda yang bisa diinterupsi (agar Stop responsif walau jeda panjang)
+let sending=false, stopFlag=false, wakeSleep=null;
+function interruptibleSleep(ms){
+  return new Promise(resolve=>{
+    if(stopFlag) return resolve();
+    const t=setTimeout(()=>{ wakeSleep=null; resolve(); }, ms);
+    wakeSleep=()=>{ clearTimeout(t); wakeSleep=null; resolve(); }; // dipanggil Stop
+  });
+}
+function fmtDur(ms){
+  const s=Math.round(ms/1000);
+  if(s<60) return s+' dtk';
+  const m=Math.floor(s/60), ss=s%60;
+  if(m<60) return m+'m'+(ss?' '+ss+'d':'');
+  const h=Math.floor(m/60), mm=m%60;
+  return h+'j'+(mm?' '+mm+'m':'');
+}
+
+// Mode aktif: 'count' (jumlah pesan) atau 'hours' (durasi jam)
+function currentMode(){ return $('modeHours').classList.contains('active') ? 'hours' : 'count'; }
+const MIN_HOURS_DELAY=250; // jeda minimal di mode durasi agar aman dari rate limit
+const MODE_DELAY={count:250, hours:1000}; // default jeda per mode (ms): Jumlah 0,25 dtk · Durasi 1 dtk
+function readDelay(){ let d=parseInt($('delay').value,10); return (!Number.isFinite(d)||d<0)?0:d; }
+
+function setMode(m){
+  const prev=currentMode();
+  $('modeCount').classList.toggle('active', m==='count');
+  $('modeHours').classList.toggle('active', m==='hours');
+  // Ganti ke default jeda mode tujuan, tapi hormati nilai yang sudah diubah manual
+  const d=readDelay();
+  if(d===0 || d===MODE_DELAY[prev]) $('delay').value=MODE_DELAY[m];
+  else if(m==='hours' && d<MIN_HOURS_DELAY) $('delay').value=MODE_DELAY.hours;
+  updateModeUI();
+}
+$('modeCount').addEventListener('click', () => setMode('count'));
+$('modeHours').addEventListener('click', () => setMode('hours'));
+
+// Tampilkan field & hint sesuai mode
+function updateModeUI(){
+  const mode=currentMode();
+  $('countWrap').classList.toggle('hidden', mode!=='count');
+  $('hoursWrap').classList.toggle('hidden', mode!=='hours');
+  const hint=$('sendHint'), d=readDelay();
+  if(mode==='hours'){
+    const hours=parseInt($('hours').value,10)||1;
+    if(d>=MIN_HOURS_DELAY){
+      const est=Math.floor(hours*3600*1000/d)+1;
+      hint.textContent=`Mode Durasi: kirim tiap ${fmtDur(d)} selama ${hours} jam → ~${est} pesan. Berhenti otomatis saat durasi habis atau saat Stop. Tab harus tetap terbuka.`;
+    }else{
+      hint.textContent=`Mode Durasi: isi "Jeda (ms)" minimal ${MIN_HOURS_DELAY} (mis. 1000 = tiap 1 detik). Bot mengirim berulang selama durasi dipilih.`;
+    }
+  }else{
+    hint.textContent='Mode Jumlah: kirim tepat sejumlah pesan, dengan jeda antar pesan supaya tidak kena rate limit.';
+  }
+}
+$('hours').addEventListener('change', updateModeUI);
+$('count').addEventListener('input', updateModeUI);
+$('delay').addEventListener('input', updateModeUI);
+
+$('stop').addEventListener('click', () => {
+  if(!sending) return;
+  stopFlag=true;
+  $('stop').disabled=true; $('stop').textContent='Menghentikan...';
+  if(wakeSleep) wakeSleep(); // bangunkan jeda yang sedang berjalan → berhenti seketika
+});
+
 $('send').addEventListener('click', async () => {
+  if(sending) return;
   const token=$('token').value.trim(), chat=$('chat').value.trim();
   const type=$('type').value, file=$('file').files[0], text=$('text').value;
+  const mode=currentMode();
+  const delay=readDelay();
 
-  let count = parseInt($('count').value,10);
-  if(!Number.isFinite(count) || count<1) count=1;
-  let delay = parseInt($('delay').value,10);
-  if(!Number.isFinite(delay) || delay<0) delay=0;
+  // Tentukan batas: mode Jumlah → jumlah pesan tetap; mode Durasi → berhenti saat waktu habis
+  let count, durationMs=0, hours=0;
+  if(mode==='hours'){
+    hours=parseInt($('hours').value,10)||1;
+    durationMs=hours*3600*1000;
+    count=Infinity;
+  }else{
+    count=parseInt($('count').value,10);
+    if(!Number.isFinite(count) || count<1) count=1;
+  }
 
   if(!token){ return show('err','Bot token belum diisi.'); }
   if(!chat){  return show('err','Chat ID belum diisi.'); }
   if(type!=='text' && !file){ return show('err','File belum dipilih.'); }
   if(type==='text' && !text.trim()){ return show('err','Pesan masih kosong.'); }
+  if(mode==='hours' && delay<MIN_HOURS_DELAY){
+    return show('err',`Mode Durasi butuh "Jeda (ms)" minimal ${MIN_HOURS_DELAY} (mis. 3000 = tiap 3 detik) supaya tidak kena flood limit Telegram.`);
+  }
 
   const req = buildRequest();
-  const btn=$('send'); btn.disabled=true;
-  const sleep = ms => new Promise(r=>setTimeout(r,ms));
+  const btn=$('send'), stopBtn=$('stop');
+  sending=true; stopFlag=false;
+  btn.disabled=true;
+  stopBtn.classList.remove('hidden'); stopBtn.disabled=false; stopBtn.textContent='⏹ Stop';
   let ok=0, fail=0, lastErr='';
 
-  for(let i=1;i<=count;i++){
-    btn.textContent=`Mengirim ${i}/${count}...`;
-    show('ok', `Mengirim pesan ${i} dari ${count}...\n✅ Sukses: ${ok}   ❌ Gagal: ${fail}`);
+  const startTime=Date.now();
+  const timeLeft = () => durationMs - (Date.now()-startTime);
+  let i=0;
+  while(true){
+    if(stopFlag) break;
+    if(mode==='count' && i>=count) break;
+    if(mode==='hours' && timeLeft()<=0) break;
+    i++;
+
+    btn.textContent = mode==='count' ? `Mengirim ${i}/${count}...` : `Mengirim ${i}...`;
+    let prog;
+    if(mode==='count'){
+      prog=`Mengirim pesan ${i} dari ${count}...\n✅ Sukses: ${ok}   ❌ Gagal: ${fail}`;
+      if(delay>0 && i<count) prog+=`\n⏱ Jeda ${fmtDur(delay)} · sisa ~${fmtDur(delay*(count-i))}`;
+    }else{
+      prog=`Mode Durasi ${hours} jam — pesan ke-${i}...\n✅ Sukses: ${ok}   ❌ Gagal: ${fail}\n⏳ Sisa waktu ~${fmtDur(Math.max(0,timeLeft()))}`;
+    }
+    show('ok', prog);
+
     try{
       const data = await (await fetch(api(token,req.method), fetchOptions(req))).json();
       if(data.ok){ ok++; } else { fail++; lastErr=`(${data.error_code}) ${data.description}`; }
     }catch(e){ fail++; lastErr='jaringan: '+e.message; }
-    if(i<count) await sleep(delay);
+
+    if(stopFlag) break;
+    // Jeda antar pesan (di mode durasi jangan menunggu melewati sisa waktu)
+    if(mode==='count'){
+      if(i<count) await interruptibleSleep(delay);
+    }else{
+      const wait=Math.min(delay, timeLeft());
+      if(wait<=0) break;
+      await interruptibleSleep(wait);
+    }
   }
 
+  const stopped=stopFlag;
+  const attempted=ok+fail;
   const resType = fail===0 ? 'ok' : (ok===0 ? 'err' : 'ok');
-  let msg=`Selesai — total ${count} pesan.\n✅ Terkirim: ${ok}   ❌ Gagal: ${fail}`;
+  const scope = mode==='count' ? `dari ${count} pesan` : `dalam durasi ${hours} jam`;
+  let msg = stopped
+    ? `Dihentikan — ${attempted} pesan diproses (${scope}).\n✅ Terkirim: ${ok}   ❌ Gagal: ${fail}`
+    : `Selesai — ${attempted} pesan (${scope}).\n✅ Terkirim: ${ok}   ❌ Gagal: ${fail}`;
   if(fail>0) msg+=`\nError terakhir: ${lastErr}`;
-  show(resType, (fail===0?'✅ ':'⚠️ ')+msg);
-  btn.disabled=false; btn.textContent='Kirim Pesan';
+  show(stopped ? 'err' : resType, (stopped?'⏹ ':(fail===0?'✅ ':'⚠️ '))+msg);
 
-  addHist({time:Date.now(), type, chat, count, ok, fail});
+  sending=false; stopFlag=false; wakeSleep=null;
+  stopBtn.classList.add('hidden'); btn.disabled=false; btn.textContent='Kirim Pesan';
+
+  if(attempted>0) addHist({time:Date.now(), type, chat, count:attempted, ok, fail});
 });
 
 /* ---------- Tab / 2 laman ---------- */
@@ -993,6 +1132,7 @@ $('jChat').addEventListener('keydown', e => { if(e.key==='Enter') jBuildLink(); 
 
 /* init */
 refreshType();
+updateModeUI();
 </script>
 </body>
 </html>
