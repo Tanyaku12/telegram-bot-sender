@@ -68,7 +68,7 @@ $('type').addEventListener('change', refreshType);
 
 /* ---------- Char counter (limit Telegram) ---------- */
 function updateCounter(){
-  const limit = $('type').value==='text' ? 4096 : 1024;
+  const limit = $('type').value==='text' ? 4096 : 2048;
   const len = $('text').value.length;
   const c=$('counter'); c.textContent = `${len} / ${limit}`;
   c.classList.toggle('over', len>limit);
@@ -396,8 +396,8 @@ function fmtDur(ms){
 
 // Mode aktif: 'count' (jumlah pesan) atau 'hours' (durasi jam)
 function currentMode(){ return $('modeHours').classList.contains('active') ? 'hours' : 'count'; }
-const MIN_HOURS_DELAY=250; // jeda minimal di mode durasi agar aman dari rate limit
-const MODE_DELAY={count:250, hours:1000}; // default jeda per mode (ms): Jumlah 0,25 dtk · Durasi 1 dtk
+const MIN_HOURS_DELAY=100; // jeda minimal di mode durasi agar aman dari rate limit
+const MODE_DELAY={count:100, hours:500}; // default jeda per mode (ms): Jumlah 0,1 dtk · Durasi 0,5 dtk
 function readDelay(){ let d=parseInt($('delay').value,10); return (!Number.isFinite(d)||d<0)?0:d; }
 
 function setMode(m){
