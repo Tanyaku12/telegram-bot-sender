@@ -294,21 +294,24 @@
   /* Spinner kecil saat tombol dinonaktifkan (loading) */
   .mini:disabled,button.send:disabled{position:relative}
 
-  /* Pembungkus + tab 2 laman */
+  /* Pembungkus + topbar (tab 2 laman + tombol tema) */
   .wrap{width:100%; max-width:472px}
-  .tabs{display:flex; gap:8px; margin-bottom:16px; padding:6px; border-radius:16px;
+  .topbar{display:flex; align-items:stretch; gap:10px; margin-bottom:16px;
+    animation:cardIn .45s cubic-bezier(.2,.7,.3,1)}
+  .tabs{flex:1; display:flex; gap:5px; padding:5px; border-radius:16px;
     background:linear-gradient(180deg,var(--card),var(--card2)); border:1px solid var(--stroke);
     backdrop-filter:blur(22px) saturate(1.35); -webkit-backdrop-filter:blur(22px) saturate(1.35);
     box-shadow:var(--shadow), inset 0 1px 0 var(--sheen);
-    animation:cardIn .45s cubic-bezier(.2,.7,.3,1);
   }
   .tab{flex:1; border:0; background:transparent; color:var(--muted); font-family:inherit;
-    font-size:13.5px; font-weight:600; padding:11px 8px; border-radius:11px; cursor:pointer;
-    transition:color .18s, background .18s, box-shadow .18s, transform .15s}
+    font-size:13px; font-weight:600; letter-spacing:.1px; padding:10px 8px; border-radius:12px;
+    cursor:pointer; white-space:nowrap;
+    transition:color .18s, background .18s, box-shadow .2s, transform .15s cubic-bezier(.34,1.56,.64,1)}
   .tab.active{background:linear-gradient(135deg,var(--tg3),var(--tg2)); color:#fff;
     box-shadow:0 6px 16px var(--glow), inset 0 1px 0 rgba(255,255,255,.28)}
   .tab:not(.active):hover{color:var(--text); background:var(--chip)}
-  .tab:active{transform:scale(.97)}
+  .tab:active{transform:scale(.96)}
+  .topbar .themebtn{align-self:stretch; height:auto; width:54px; border-radius:16px; margin:0; font-size:19px}
 
   /* Kartu hasil link (laman Buka Grup) */
   .result{margin-top:14px; display:none; flex-direction:column; gap:10px}
@@ -337,9 +340,12 @@
 </head>
 <body>
   <div class="wrap">
-  <div class="tabs">
-    <button class="tab active" id="tabSend" data-view="send">✉️ Kirim Pesan</button>
-    <button class="tab" id="tabJoin" data-view="join">🔗 Buka Grup via ID</button>
+  <div class="topbar">
+    <div class="tabs">
+      <button class="tab active" id="tabSend" data-view="send">✉️ Kirim Pesan</button>
+      <button class="tab" id="tabJoin" data-view="join">🔗 Buka Grup</button>
+    </div>
+    <button class="themebtn" id="theme" title="Ganti tema">🌙</button>
   </div>
   <div class="card" id="pageSend">
     <div class="brand">
@@ -350,7 +356,6 @@
         <h1>Kirim Pesan Bot</h1>
         <div class="sub" style="margin:0">via Telegram Bot API</div>
       </div>
-      <button class="themebtn" id="theme" title="Ganti tema">🌙</button>
     </div>
     <div class="sub">Kirim pesan (teks / foto / dokumen / video) dari bot-mu ke sebuah chat/user ID.</div>
 
