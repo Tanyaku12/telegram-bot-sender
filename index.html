@@ -486,7 +486,7 @@
       <input id="jChat" type="text" placeholder="mis. -1003976179139 atau @namagrup" autocomplete="off">
       <button class="mini" id="jGo">Buat Link</button>
     </div>
-    <div class="hint">Grup/channel privat berformat <code>-100…</code>. Link privat (<code>t.me/c/…</code>) hanya membuka grup bagi yang <b>sudah jadi anggota</b>.</div>
+    <div class="hint">Grup/channel privat berformat <code>-100…</code> → dibuat jadi link <code>t.me/…</code> (prefiks <code>-100</code> dibuang).</div>
 
     <div id="jOut" class="out"></div>
     <div class="result" id="jResult"></div>
@@ -970,21 +970,21 @@ async function jBuildLink(){
         const name=c.title || [c.first_name,c.last_name].filter(Boolean).join(' ') || c.username || 'Grup';
         if(c.username) links.push({label:'Link publik (bisa join)', url:'https://t.me/'+c.username});
         if(c.invite_link) links.push({label:'Link undangan resmi (bisa join)', url:c.invite_link});
-        if(internal) links.push({label:'Deep-link anggota (t.me/c)', url:'https://t.me/c/'+internal});
+        if(internal) links.push({label:'Link grup (t.me)', url:'https://t.me/'+internal});
         if(links.length===0){ jshow('err','Grup ditemukan tapi tanpa username/invite link, dan id bukan -100… jadi tak ada link yang bisa dibuat.'); return; }
         jshow('ok','✅ Info grup diambil via bot.');
         jRenderLinks({name, type:c.type, memberInfo:'id '+c.id, links}); return;
       }
       if(data && !data.ok){
         if(!internal){ jshow('err',`getChat gagal (${data.error_code}): ${data.description}\nDan id bukan -100…. Pastikan bot sudah jadi anggota grup, atau pakai @username.`); return; }
-        jshow('ok',`⚠️ getChat gagal (${data.error_code}) — bot mungkin belum jadi anggota. Pakai deep-link anggota (hanya berfungsi untuk yang sudah di dalam grup).`);
-        jRenderLinks({name:null, links:[{label:'Deep-link anggota (t.me/c)', url:'https://t.me/c/'+internal}]}); return;
+        jshow('ok',`⚠️ getChat gagal (${data.error_code}) — bot mungkin belum jadi anggota. Link t.me dibuat langsung dari id.`);
+        jRenderLinks({name:null, links:[{label:'Link grup (t.me)', url:'https://t.me/'+internal}]}); return;
       }
     }
-    // Tanpa token → hanya bisa deep-link dari format -100…
+    // Tanpa token → hanya bisa buat link t.me dari format -100…
     if(!internal){ jshow('err','Tanpa token, id harus format -100… (supergroup/channel) atau pakai @username. Untuk grup privat, isi Bot Token agar bisa ambil link undangan.'); return; }
-    jshow('ok','✅ Deep-link dibuat (hanya membuka grup bagi anggota).');
-    jRenderLinks({name:null, links:[{label:'Deep-link anggota (t.me/c)', url:'https://t.me/c/'+internal}]});
+    jshow('ok','✅ Link t.me dibuat dari id.');
+    jRenderLinks({name:null, links:[{label:'Link grup (t.me)', url:'https://t.me/'+internal}]});
   }catch(e){ jshow('err','❌ Error: '+e.message); }
   finally{ btn.disabled=false; btn.textContent='Buat Link'; }
 }
