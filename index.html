@@ -26,125 +26,150 @@
       <div>
         <h1>Kirim Pesan Bot</h1>
         <div class="sub" style="margin:0">via Telegram Bot API</div>
+      </div>    <div class="info-box">
+      <span class="info-icon">ℹ️</span>
+      <div class="info-text">
+        Token &amp; chat ID disimpan di browser. Pastikan user sudah pernah <b>/start</b> ke bot.
       </div>
-    </div>
-    <div class="sub">Kirim pesan (teks / foto / dokumen / video) dari bot-mu ke sebuah chat/user ID.</div>
-
-    <label>Bot Token</label>
-    <div class="with-btn">
-      <input id="token" type="text" placeholder="123456:ABC-DEF..." autocomplete="off" spellcheck="false">
-      <button class="mini" id="toggleToken" title="Sembunyikan/Perlihatkan token" aria-label="Sembunyikan token">🙈</button>
-      <button class="mini" id="check">Cek Bot</button>
-    </div>
-    <div class="hint">Dari @BotFather. Token tetap di browser — dikirim langsung ke api.telegram.org.</div>
-    <label class="check"><input type="checkbox" id="remember"> Ingat token &amp; chat ID di browser ini</label>
-    <div class="botcard" id="botcard">
-      <div class="avatar" id="botAv">B</div>
-      <div><b id="botName"></b><br><span id="botUser"></span></div>
-    </div>
-
-    <div class="with-btn" style="margin-top:14px">
-      <div style="flex:1">
-        <label style="margin-top:0">Target Chat ID</label>
-        <input id="chat" type="text" placeholder="mis. 123456789 atau @username" autocomplete="off">
-      </div>
-      <button class="mini" id="loadChats" style="align-self:flex-end; height:44px">Ambil Chat</button>
-    </div>
-    <div class="hint">Untuk DM bot↔user, <b>chat id percakapan = user id</b> (angka sama). User harus sudah pernah <b>/start</b> ke bot ini, kalau tidak Telegram menolak (error 403). Tombol <b>Ambil Chat</b> memuat chat terbaru dari getUpdates dan otomatis mengisi chat id-nya.</div>
-    <div class="picklist" id="picklist"></div>
-
-    <div class="row">
-      <div>
-        <label>Tipe</label>
-        <select id="type">
-          <option value="text">Teks</option>
-          <option value="photo">Foto</option>
-          <option value="document">Dokumen</option>
-          <option value="video">Video</option>
-        </select>
-      </div>
-      <div>
-        <label>Format</label>
-        <select id="mode">
-          <option value="">Tanpa format</option>
-          <option value="MarkdownV2">Markdown</option>
-          <option value="HTML">HTML</option>
-        </select>
+      <div class="tooltip-container">
+        <span class="tooltip-trigger">?</span>
+        <div class="tooltip-content">
+          <ul>
+            <li>Token dikirim langsung ke <code>api.telegram.org</code> (aman &amp; privat).</li>
+            <li>Gunakan <b>Ambil Chat</b> untuk mengisi Chat ID secara otomatis dari interaksi terbaru.</li>
+            <li>Mengirim file memiliki batas ukuran maksimal 50 MB.</li>
+          </ul>
+        </div>
       </div>
     </div>
 
-    <div id="urlWrap" class="hidden">
-      <label id="urlLabel">Pilih File</label>
-      <input id="file" type="file">
-      <div class="hint">File diunggah langsung dari perangkatmu ke Telegram (maks 50 MB via Bot API).</div>
+    <div class="sub-tabs">
+      <button class="sub-tab active" id="subtabSend">✉️ Kirim Pesan</button>
+      <button class="sub-tab" id="subtabHistory">📜 Riwayat</button>
+      <button class="sub-tab" id="subtabData">👥 Data Bot</button>
     </div>
 
-    <div class="labelrow">
-      <label id="textLabel" style="margin:0">Pesan</label>
-      <span class="counter" id="counter">0 / 4096</span>
-    </div>
-    <textarea id="text" placeholder="Tulis pesan di sini..."></textarea>
-
-    <label>Tombol Inline (opsional)</label>
-    <div class="row">
-      <div><input id="btnText" type="text" placeholder="Teks tombol, mis. Buka Situs"></div>
-      <div><input id="btnUrl" type="text" placeholder="https://..."></div>
-    </div>
-    <div class="hint">Isi keduanya untuk menambahkan satu tombol tautan di bawah pesan.</div>
-
-    <label>Batasi kirim dengan</label>
-    <div class="modeseg">
-      <button type="button" class="segbtn active" id="modeCount">🔢 Jumlah pesan</button>
-      <button type="button" class="segbtn" id="modeHours">⏱ Durasi (jam)</button>
-    </div>
-    <div class="row" style="margin-top:12px">
-      <div id="countWrap">
-        <label style="margin-top:0">Jumlah</label>
-        <input id="count" type="number" min="1" step="1" value="1">
+    <div id="subpageSendForm">
+      <label>Bot Token</label>
+      <div class="with-btn">
+        <input id="token" type="text" placeholder="123456:ABC-DEF..." autocomplete="off" spellcheck="false">
+        <button class="mini" id="toggleToken" title="Sembunyikan/Perlihatkan token" aria-label="Sembunyikan token">🙈</button>
+        <button class="mini" id="check">Cek Bot</button>
       </div>
-      <div id="hoursWrap" class="hidden">
-        <label style="margin-top:0">Durasi (jam)</label>
-        <select id="hours">
-          <option value="1">1 jam</option>
-          <option value="2">2 jam</option>
-          <option value="3">3 jam</option>
-          <option value="4">4 jam</option>
-          <option value="5">5 jam</option>
-        </select>
+      <div class="hint">Dari @BotFather. Token tetap di browser — dikirim langsung ke api.telegram.org.</div>
+      <label class="check"><input type="checkbox" id="remember"> Ingat token &amp; chat ID di browser ini</label>
+      <div class="botcard" id="botcard">
+        <div class="avatar" id="botAv">B</div>
+        <div><b id="botName"></b><br><span id="botUser"></span></div>
       </div>
-      <div>
-        <label style="margin-top:0">Jeda (ms)</label>
-        <input id="delay" type="number" min="0" max="3600000" step="50" value="250">
+
+      <div class="with-btn" style="margin-top:14px">
+        <div style="flex:1">
+          <label style="margin-top:0">Target Chat ID</label>
+          <input id="chat" type="text" placeholder="mis. 123456789 atau @username" autocomplete="off">
+        </div>
+        <button class="mini" id="loadChats" style="align-self:flex-end; height:44px">Ambil Chat</button>
       </div>
+      <div class="hint">Untuk DM bot↔user, <b>chat id percakapan = user id</b> (angka sama). User harus sudah pernah <b>/start</b> ke bot ini, kalau tidak Telegram menolak (error 403). Tombol <b>Ambil Chat</b> memuat chat terbaru dari getUpdates dan otomatis mengisi chat id-nya.</div>
+      <div class="picklist" id="picklist"></div>
+
+      <div class="row">
+        <div>
+          <label>Tipe</label>
+          <select id="type">
+            <option value="text">Teks</option>
+            <option value="photo">Foto</option>
+            <option value="document">Dokumen</option>
+            <option value="video">Video</option>
+          </select>
+        </div>
+        <div>
+          <label>Format</label>
+          <select id="mode">
+            <option value="">Tanpa format</option>
+            <option value="MarkdownV2">Markdown</option>
+            <option value="HTML">HTML</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="urlWrap" class="hidden">
+        <label id="urlLabel">Pilih File</label>
+        <input id="file" type="file">
+        <div class="hint">File diunggah langsung dari perangkatmu ke Telegram (maks 50 MB via Bot API).</div>
+      </div>
+
+      <div class="labelrow">
+        <label id="textLabel" style="margin:0">Pesan</label>
+        <span class="counter" id="counter">0 / 4096</span>
+      </div>
+      <textarea id="text" placeholder="Tulis pesan di sini..."></textarea>
+
+      <label>Tombol Inline (opsional)</label>
+      <div class="row">
+        <div><input id="btnText" type="text" placeholder="Teks tombol, mis. Buka Situs"></div>
+        <div><input id="btnUrl" type="text" placeholder="https://..."></div>
+      </div>
+      <div class="hint">Isi keduanya untuk menambahkan satu tombol tautan di bawah pesan.</div>
+
+      <label>Batasi kirim dengan</label>
+      <div class="modeseg">
+        <button type="button" class="segbtn active" id="modeCount">🔢 Jumlah pesan</button>
+        <button type="button" class="segbtn" id="modeHours">⏱ Durasi (jam)</button>
+      </div>
+      <div class="row" style="margin-top:12px">
+        <div id="countWrap">
+          <label style="margin-top:0">Jumlah</label>
+          <input id="count" type="number" min="1" step="1" value="1">
+        </div>
+        <div id="hoursWrap" class="hidden">
+          <label style="margin-top:0">Durasi (jam)</label>
+          <select id="hours">
+            <option value="1">1 jam</option>
+            <option value="2">2 jam</option>
+            <option value="3">3 jam</option>
+            <option value="4">4 jam</option>
+            <option value="5">5 jam</option>
+          </select>
+        </div>
+        <div>
+          <label style="margin-top:0">Jeda (ms)</label>
+          <input id="delay" type="number" min="0" max="3600000" step="50" value="250">
+        </div>
+      </div>
+      <div class="hint" id="sendHint">Mode Jumlah: kirim tepat sejumlah pesan, dengan jeda antar pesan supaya tidak kena rate limit.</div>
+
+      <button class="ghost" id="previewBtn">👁 Pratinjau Pesan</button>
+      <div class="preview" id="preview"><div class="bubble" id="bubble"></div></div>
+
+      <button class="send" id="send">Kirim Pesan</button>
+      <button class="ghost hidden" id="stop">⏹ Stop</button>
+      <div id="out" class="out"></div>
     </div>
-    <div class="hint" id="sendHint">Mode Jumlah: kirim tepat sejumlah pesan, dengan jeda antar pesan supaya tidak kena rate limit.</div>
 
-    <button class="ghost" id="previewBtn">👁 Pratinjau Pesan</button>
-    <div class="preview" id="preview"><div class="bubble" id="bubble"></div></div>
-
-    <button class="send" id="send">Kirim Pesan</button>
-    <button class="ghost hidden" id="stop">⏹ Stop</button>
-    <div id="out" class="out"></div>
-
-    <div class="sechead">
-      <h2>Riwayat Pengiriman</h2>
-      <button class="clr" id="clearHist">Hapus semua</button>
+    <div id="subpageHistory" class="hidden">
+      <div class="sechead">
+        <h2>Riwayat Pengiriman</h2>
+        <button class="clr" id="clearHist">Hapus semua</button>
+      </div>
+      <div class="histlist" id="histlist"></div>
     </div>
-    <div class="histlist" id="histlist"></div>
 
-    <div class="sechead">
-      <h2>Grup Bot</h2>
-      <button class="clr" id="clearGroups">Hapus semua</button>
-    </div>
-    <div class="secnote">Terkumpul otomatis saat <b>Ambil Chat</b> (event bot ditambah/dikeluarkan &amp; grup yang aktif). Bot API tak bisa menarik daftar grup penuh, jadi ini <b>best-effort</b> &amp; makin lengkap makin sering polling.</div>
-    <div class="histlist" id="grouplist"></div>
+    <div id="subpageBotData" class="hidden">
+      <div class="sechead">
+        <h2>Grup Bot</h2>
+        <button class="clr" id="clearGroups">Hapus semua</button>
+      </div>
+      <div class="secnote">Terkumpul otomatis saat <b>Ambil Chat</b> (event bot ditambah/dikeluarkan &amp; grup yang aktif). Bot API tak bisa menarik daftar grup penuh, jadi ini <b>best-effort</b> &amp; makin lengkap makin sering polling.</div>
+      <div class="histlist" id="grouplist"></div>
 
-    <div class="sechead">
-      <h2>Pengguna Bot</h2>
-      <button class="clr" id="clearContacts">Hapus semua</button>
+      <div class="sechead">
+        <h2>Pengguna Bot</h2>
+        <button class="clr" id="clearContacts">Hapus semua</button>
+      </div>
+      <div class="secnote">User/chat privat yang pernah terlihat berinteraksi dengan bot (dari <b>Ambil Chat</b>). Bersifat kumulatif &amp; best-effort. Klik <b>Pilih</b> untuk jadikan target.</div>
+      <div class="histlist" id="contactlist"></div>
     </div>
-    <div class="secnote">User/chat privat yang pernah terlihat berinteraksi dengan bot (dari <b>Ambil Chat</b>). Bersifat kumulatif &amp; best-effort. Klik <b>Pilih</b> untuk jadikan target.</div>
-    <div class="histlist" id="contactlist"></div>
 
     <div class="foot">
       Gunakan hanya untuk bot &amp; penerima yang sah. Mengirim pesan tak diminta melanggar
