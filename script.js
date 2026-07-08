@@ -352,7 +352,7 @@ function renderGroups(){
       <div class="ht"><b>${esc(e.name)}</b><small>id ${e.id}${e.username?' · @'+esc(e.username):''} · ${e.type} · terlihat ${fmtDate(e.lastSeen)}</small></div>
       <span class="badge ${badgeCls}">${badge}</span>`;
     const pick=document.createElement('button'); pick.className='pick'; pick.textContent='Pilih';
-    pick.addEventListener('click', () => { $('chat').value=e.id; persistCreds(); show('ok',`Target di-set ke grup: ${e.name} (${e.id})`); switchSubView('SendForm'); });
+    pick.addEventListener('click', () => { $('chat').value=e.id; persistCreds(); show('ok',`Target di-set ke grup: ${e.name} (${e.id})`); });
     div.appendChild(pick);
     el.appendChild(div);
   }
@@ -366,7 +366,7 @@ function renderContacts(){
     div.innerHTML=`<div class="hi">👤</div>
       <div class="ht"><b>${esc(e.name)}</b><small>id ${e.id}${e.username?' · @'+esc(e.username):''} · ${e.count}× · terakhir ${fmtDate(e.lastSeen)}</small></div>`;
     const pick=document.createElement('button'); pick.className='pick'; pick.textContent='Pilih';
-    pick.addEventListener('click', () => { $('chat').value=e.id; persistCreds(); show('ok',`Target di-set ke: ${e.name} (${e.id})`); switchSubView('SendForm'); });
+    pick.addEventListener('click', () => { $('chat').value=e.id; persistCreds(); show('ok',`Target di-set ke: ${e.name} (${e.id})`); });
     div.appendChild(pick);
     el.appendChild(div);
   }
@@ -622,22 +622,6 @@ function switchView(v){
 }
 $('tabSend').addEventListener('click', () => switchView('send'));
 $('tabJoin').addEventListener('click', () => switchView('join'));
-
-/* ---------- Sub-tab / Kirim Pesan, Riwayat, Data Bot ---------- */
-function switchSubView(v){
-  const views = ['SendForm', 'History', 'BotData'];
-  views.forEach(view => {
-    const isTarget = view.toLowerCase() === v.toLowerCase();
-    $(`subpage${view}`).classList.toggle('hidden', !isTarget);
-    let tabId = 'subtabSend';
-    if(view === 'History') tabId = 'subtabHistory';
-    if(view === 'BotData') tabId = 'subtabData';
-    $(tabId).classList.toggle('active', isTarget);
-  });
-}
-$('subtabSend').addEventListener('click', () => switchSubView('SendForm'));
-$('subtabHistory').addEventListener('click', () => switchSubView('History'));
-$('subtabData').addEventListener('click', () => switchSubView('BotData'));
 
 /* ---------- Buka Grup via ID ---------- */
 const jout=$('jOut');
